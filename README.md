@@ -1,2 +1,0 @@
-# carly
-"call me maybe"
