@@ -40,9 +40,10 @@ class Call(object):
 
 class HookedCall(object):
 
-    def __init__(self, class_, hook):
+    def __init__(self, class_, hook, decoder=Call):
         self._called = Deferred()
         self.original = getattr(class_, hook)
+        self.decode = decoder
 
     def __get__(self, instance, owner):
         if instance is None:
@@ -62,9 +63,9 @@ class HookedCall(object):
             partial(self._reset, handler, timeout)
         )
 
-    def called(self, decode=Call, timeout=DEFAULT_TIMEOUT):
+    def called(self, decode=None, timeout=DEFAULT_TIMEOUT):
         return self._expectCallback(
-            lambda result: decode(*result.args, **result.kw),
+            lambda result: (decode or self.decode)(*result.args, **result.kw),
             timeout,
         )
 
@@ -72,11 +73,11 @@ class HookedCall(object):
         return self._expectCallback(lambda result: result.protocol, timeout)
 
 
-def hook(class_, *hooks):
-    methods = {}
-    for hook in hooks:
+def hook(class_, *names):
+    methods = {'__carly_hooked__': True}
+    for name in names:
         d = Deferred()
-        methods[hook] = HookedCall(class_, hook)
+        methods[name] = HookedCall(class_, name)
 
     if issubclass(class_, object):
         type_ = type
@@ -85,3 +86,9 @@ def hook(class_, *hooks):
         type_ = ClassType
 
     return type_('Hooked'+class_.__name__, (class_,), methods)
+
+
+def hookMethod(class_, name, decoder=Call):
+    if not getattr(class_, '__carly_hooked__', False):
+        raise AssertionError("Can't hook a method on an unhooked class")
+    setattr(class_, name, HookedCall(class_, name, decoder))

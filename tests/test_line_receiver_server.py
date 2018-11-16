@@ -5,6 +5,7 @@ from twisted.protocols.basic import LineReceiver
 from twisted.trial.unittest import TestCase
 
 from carly import hook, waitUntilAll
+from carly.hook import hookMethod
 
 from .line_receiver import EchoServer
 
@@ -21,7 +22,8 @@ class TestLineReceiverServer(TestCase):
         f = protocol.Factory()
         f.protocol = self.serverProtocolClass
         self.serverPort = reactor.listenTCP(0, f)
-        self.clientProtocolClass = hook(ClientProtocol, 'connectionMade', 'connectionLost', 'lineReceived')
+        self.clientProtocolClass = hook(ClientProtocol, 'connectionMade', 'connectionLost')
+        hookMethod(self.clientProtocolClass, 'lineReceived', decoder=lambda line: line)
         factory = protocol.ClientFactory()
         factory.protocol = self.clientProtocolClass
         self.clientConnection = reactor.connectTCP('localhost', self.serverPort.getHost().port, factory)
@@ -44,13 +46,13 @@ class TestLineReceiverServer(TestCase):
     @inlineCallbacks
     def testOneMessage(self):
         self.client.sendLine('hello')
-        call = yield self.client.lineReceived.called()
-        compare(call.args, expected=['hello'])
+        line = yield self.client.lineReceived.called()
+        compare(line, expected='hello')
 
     @inlineCallbacks
     def testSendMessageReceiveMessageSendMessageRecieveMessage(self):
         self.client.sendLine('hello')
-        line = yield self.client.lineReceived.called(lambda line: line)
+        line = yield self.client.lineReceived.called()
         compare(line, expected='hello')
         self.client.sendLine('goodbye')
         # also test explicit decoder:
@@ -60,8 +62,8 @@ class TestLineReceiverServer(TestCase):
     @inlineCallbacks
     def testSendTwoMessagesReceveBoth(self):
         self.client.sendLine('hello')
-        line = yield self.client.lineReceived.called(lambda line: line)
+        line = yield self.client.lineReceived.called()
         compare(line, expected='hello')
         self.client.sendLine('goodbye')
-        line = yield self.client.lineReceived.called(lambda line: line)
+        line = yield self.client.lineReceived.called()
         compare(line, expected='goodbye')
