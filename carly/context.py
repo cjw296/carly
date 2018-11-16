@@ -54,14 +54,14 @@ class Context(object):
             partial(maybeDeferred, server.port.stopListening)
         )
 
-    def makeTCPClient(self, protocol, port, factory=None):
-        protocolClass = hook(protocol, 'connectionMade', 'connectionLost')
+    def makeTCPClient(self, protocol, port, factory=None, when='connectionMade'):
+        protocolClass = hook(protocol, when, 'connectionLost')
         if factory is None:
             factory = ClientFactory()
         factory.protocol = protocolClass
         connection = reactor.connectTCP('localhost', port.getHost().port, factory)
         client = TCPClient(
-            protocolClass, connection, protocolClass.connectionMade.protocol()
+            protocolClass, connection, getattr(protocolClass, when).protocol()
         )
         self.cleanupTCPClient(client)
         return client
