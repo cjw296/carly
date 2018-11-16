@@ -1,1 +1,4 @@
 poetry.lock
+dist
+*.egg-info
+_trial_temp
