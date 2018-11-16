@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "carly"
-version = "0.1.2"
+version = "0.2.0"
 description = "A tool for putting messages into and collecting responses from Twisted servers using real networking"
 authors = ["Chris Withers <chris@withers.org>"]
 license = "MIT"
