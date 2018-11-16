@@ -9,8 +9,7 @@ from twisted.internet import reactor
 
 from types import ClassType
 
-
-DEFAULT_TIMEOUT = 0.2
+from .timeout import resolveTimeout
 
 Result = namedtuple('Result', ['protocol', 'args', 'kw'])
 
@@ -59,17 +58,18 @@ class HookedCall(object):
             return self._called
 
     def _expectCallback(self, handler, timeout):
+        timeout = resolveTimeout(timeout)
         return self._called.addTimeout(timeout, reactor).addCallback(
             partial(self._reset, handler, timeout)
         )
 
-    def called(self, decode=None, timeout=DEFAULT_TIMEOUT):
+    def called(self, decode=None, timeout=None):
         return self._expectCallback(
             lambda result: (decode or self.decode)(*result.args, **result.kw),
             timeout,
         )
 
-    def protocol(self, timeout=DEFAULT_TIMEOUT):
+    def protocol(self, timeout=None):
         return self._expectCallback(lambda result: result.protocol, timeout)
 
 
