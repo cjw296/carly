@@ -1,3 +1,4 @@
+from testfixtures import compare
 from twisted.internet import protocol, reactor
 from twisted.internet.defer import inlineCallbacks, maybeDeferred
 from twisted.protocols.basic import LineReceiver
@@ -20,7 +21,7 @@ class TestLineReceiverServer(TestCase):
         f = protocol.Factory()
         f.protocol = self.serverProtocolClass
         self.serverPort = reactor.listenTCP(0, f)
-        self.clientProtocolClass = hook(ClientProtocol, 'connectionMade', 'connectionLost')
+        self.clientProtocolClass = hook(ClientProtocol, 'connectionMade', 'connectionLost', 'lineReceived')
         factory = protocol.ClientFactory()
         factory.protocol = self.clientProtocolClass
         self.clientConnection = reactor.connectTCP('localhost', self.serverPort.getHost().port, factory)
@@ -39,3 +40,28 @@ class TestLineReceiverServer(TestCase):
 
     def testConnectDisconnect(self):
         pass
+
+    @inlineCallbacks
+    def testOneMessage(self):
+        self.client.sendLine('hello')
+        call = yield self.client.lineReceived.called()
+        compare(call.args, expected=['hello'])
+
+    @inlineCallbacks
+    def testSendMessageReceiveMessageSendMessageRecieveMessage(self):
+        self.client.sendLine('hello')
+        line = yield self.client.lineReceived.called(lambda line: line)
+        compare(line, expected='hello')
+        self.client.sendLine('goodbye')
+        # also test explicit decoder:
+        line = yield self.client.lineReceived.called(lambda line: line+'!')
+        compare(line, expected='goodbye!')
+
+    @inlineCallbacks
+    def testSendTwoMessagesReceveBoth(self):
+        self.client.sendLine('hello')
+        line = yield self.client.lineReceived.called(lambda line: line)
+        compare(line, expected='hello')
+        self.client.sendLine('goodbye')
+        line = yield self.client.lineReceived.called(lambda line: line)
+        compare(line, expected='goodbye')

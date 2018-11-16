@@ -1,5 +1,7 @@
 from __future__ import print_function
 
+from functools import partial
+
 from collections import namedtuple
 
 from twisted.internet.defer import Deferred
@@ -25,6 +27,16 @@ class BoundHook(object):
         self.hooked._called.callback(Result(self.instance, args, kw))
         return result
 
+    def __getattr__(self, item):
+        return getattr(self.hooked, item)
+
+
+class Call(object):
+
+    def __init__(self, *args, **kw):
+        self.args = args
+        self.kw = kw
+
 
 class HookedCall(object):
 
@@ -37,15 +49,27 @@ class HookedCall(object):
             return self
         return BoundHook(self, self.original, instance)
 
-    def called(self, timeout=DEFAULT_TIMEOUT):
+    def _reset(self, handler, timeout, result):
+        if isinstance(result, Result):
+            return handler(result)
+        else:
+            self._called = Deferred()
+            self._called.addTimeout(timeout, reactor).addCallback(handler)
+            return self._called
+
+    def _expectCallback(self, handler, timeout):
         return self._called.addTimeout(timeout, reactor).addCallback(
-            lambda result: None
+            partial(self._reset, handler, timeout)
+        )
+
+    def called(self, decode=Call, timeout=DEFAULT_TIMEOUT):
+        return self._expectCallback(
+            lambda result: decode(*result.args, **result.kw),
+            timeout,
         )
 
     def protocol(self, timeout=DEFAULT_TIMEOUT):
-        return self._called.addTimeout(timeout, reactor).addCallback(
-            lambda result: result.protocol
-        )
+        return self._expectCallback(lambda result: result.protocol, timeout)
 
 
 def hook(class_, *hooks):
