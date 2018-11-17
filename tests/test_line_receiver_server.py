@@ -1,4 +1,3 @@
-from functools import partial
 from testfixtures import compare
 from twisted.internet.defer import inlineCallbacks
 from twisted.protocols.basic import LineReceiver
@@ -21,10 +20,16 @@ class TestLineReceiverServer(TestCase):
         client = context.makeTCPClient(ClientProtocol, port=server.port)
         hookMethod(client.protocolClass, 'lineReceived', decoder=lambda line: line)
         self.client = yield client.protocol
-        self.addCleanup(partial(context.cleanup))
+        self.connection = client.connection
+        self.addCleanup(context.cleanup)
 
     def testConnectDisconnect(self):
         pass
+
+    @inlineCallbacks
+    def testDisconnectDuringTest(self):
+        self.connection.disconnect()
+        yield self.client.connectionLost.called()
 
     @inlineCallbacks
     def testOneMessage(self):
