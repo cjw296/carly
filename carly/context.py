@@ -35,12 +35,12 @@ class Context(object):
         yield self._cleanup(self.cleanups['connections'], timeout)
         yield self._cleanup(self.cleanups['listens'], timeout)
 
-    def makeTCPServer(self, protocol, factory=None):
+    def makeTCPServer(self, protocol, factory=None, interface='127.0.0.1'):
         protocolClass = hook(protocol, 'connectionLost')
         if factory is None:
             factory = Factory()
         factory.protocol = protocolClass
-        port = reactor.listenTCP(0, factory)
+        port = reactor.listenTCP(0, factory, interface=interface)
         server = TCPServer(protocolClass, port)
         self.cleanupTCPServer(server)
         return server
