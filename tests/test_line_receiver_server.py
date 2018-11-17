@@ -45,8 +45,8 @@ class TestLineReceiverServer(TestCase):
     @inlineCallbacks
     def testSendTwoMessagesReceveBoth(self):
         self.client.sendLine('hello')
+        self.client.sendLine('goodbye')
         line = yield self.client.lineReceived.called()
         compare(line, expected='hello')
-        self.client.sendLine('goodbye')
         line = yield self.client.lineReceived.called()
         compare(line, expected='goodbye')
