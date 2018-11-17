@@ -39,10 +39,11 @@ class Call(object):
 
 class HookedCall(object):
 
-    def __init__(self, class_, hook, decoder=Call):
+    def __init__(self, class_, hook, decoder=Call, once=False):
         self._called = Deferred()
         self.original = getattr(class_, hook)
         self.decode = decoder
+        self.once = once
 
     def __get__(self, instance, owner):
         if instance is None:
@@ -57,11 +58,17 @@ class HookedCall(object):
             self._called.addTimeout(timeout, reactor).addCallback(handler)
             return self._called
 
+    def _once(self, handler, result):
+        if result is not None:
+            return handler(result)
+
     def _expectCallback(self, handler, timeout):
         timeout = resolveTimeout(timeout)
-        return self._called.addTimeout(timeout, reactor).addCallback(
-            partial(self._reset, handler, timeout)
-        )
+        if self.once:
+            callback = partial(self._once, handler)
+        else:
+            callback = partial(self._reset, handler, timeout)
+        return self._called.addTimeout(timeout, reactor).addCallback(callback)
 
     def called(self, decode=None, timeout=None):
         return self._expectCallback(
@@ -88,7 +95,7 @@ def hook(class_, *names):
     return type_('Hooked'+class_.__name__, (class_,), methods)
 
 
-def hookMethod(class_, name, decoder=Call):
+def hookMethod(class_, name, decoder=Call, once=False):
     if not getattr(class_, '__carly_hooked__', False):
         raise AssertionError("Can't hook a method on an unhooked class")
-    setattr(class_, name, HookedCall(class_, name, decoder))
+    setattr(class_, name, HookedCall(class_, name, decoder, once))
