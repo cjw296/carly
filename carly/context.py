@@ -6,7 +6,7 @@ from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks, gatherResults, maybeDeferred
 from twisted.internet.protocol import Factory, ClientFactory
 
-from .hook import hook
+from .hook import hook, hookMethod
 from .timeout import resolveTimeout
 
 TCPServer = namedtuple('TCPServer', ['protocolClass', 'port'])
@@ -55,7 +55,7 @@ class Context(object):
         )
 
     def makeTCPClient(self, protocol, port, factory=None, when='connectionMade'):
-        protocolClass = hook(protocol, when, 'connectionLost')
+        protocolClass = hook(protocol, when)
         if factory is None:
             factory = ClientFactory()
         factory.protocol = protocolClass
@@ -66,7 +66,8 @@ class Context(object):
         self.cleanupTCPClient(client)
         return client
 
-    def cleanupTCPClient(self, client, timeout=None):
+    def cleanupTCPClient(self, client, timeout=None, when='connectionLost'):
+        hookMethod(client.protocolClass, when, once=True)
         timeout = resolveTimeout(timeout)
         self.cleanups['connections'].extend((
             partial(maybeDeferred, client.connection.disconnect),
