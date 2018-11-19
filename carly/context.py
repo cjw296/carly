@@ -9,7 +9,7 @@ from twisted.internet.protocol import Factory, ClientFactory
 from .hook import hook, hookMethod
 from .timeout import resolveTimeout
 
-TCPServer = namedtuple('TCPServer', ['protocolClass', 'port'])
+TCPServer = namedtuple('TCPServer', ['protocolClass', 'port', 'protocol'])
 TCPClient = namedtuple('TCPClient', ['protocolClass', 'connection', 'protocol'])
 
 
@@ -36,16 +36,19 @@ class Context(object):
         yield self._cleanup(self.cleanups['listens'], timeout)
 
     def makeTCPServer(self, protocol, factory=None, interface='127.0.0.1'):
-        protocolClass = hook(protocol, 'connectionLost')
+        protocolClass = hook(protocol, 'connectionMade')
         if factory is None:
             factory = Factory()
         factory.protocol = protocolClass
         port = reactor.listenTCP(0, factory, interface=interface)
-        server = TCPServer(protocolClass, port)
+        server = TCPServer(
+            protocolClass, port, protocolClass.connectionMade.protocol()
+        )
         self.cleanupTCPServer(server)
         return server
 
     def cleanupTCPServer(self, server, timeout=None):
+        hookMethod(server.protocolClass, 'connectionLost', once=True)
         timeout = resolveTimeout(timeout)
         self.cleanups['connections'].append(
             partial(server.protocolClass.connectionLost.called, timeout=timeout)

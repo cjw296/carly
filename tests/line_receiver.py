@@ -17,10 +17,8 @@ class EchoClient(LineReceiver):
 
     def connectionMade(self):
         self.sendLine(b"Hello, world!")
-        self.sendLine(b"What a fine day it is.")
         self.sendLine(self.end)
 
     def lineReceived(self, line):
-        print("receive:", line)
         if line == self.end:
             self.transport.loseConnection()
