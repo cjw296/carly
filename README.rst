@@ -1,7 +1,7 @@
 carly
 =====
 
-A tool for putting messages into and collecting responses from Twisted servers using real networking.
+A tool for putting messages into and collecting responses from Twisted servers and clients using real networking.
 
 "call me maybe"
 
