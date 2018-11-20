@@ -2,9 +2,9 @@ from __future__ import print_function
 
 from functools import partial
 
-from collections import namedtuple
+from collections import namedtuple, defaultdict
 
-from twisted.internet.defer import Deferred
+from twisted.internet.defer import Deferred, inlineCallbacks, succeed, returnValue
 from twisted.internet import reactor
 
 from types import ClassType
@@ -18,38 +18,29 @@ class HookState(object):
 
     def __init__(self, once):
         self.once = once
-        self.classDeferred = Deferred()
-        self.instanceDeferreds = {}
-
-    def resetDeferredFor(self, instance):
-        self.classDeferred = Deferred()
-        key = id(instance)
-        if key in self.instanceDeferreds:
-            del self.instanceDeferreds[key]
-
-    def deferredFor(self, instance):
-        if instance is None:
-            return self.classDeferred
-        key = id(instance)
-        if key not in self.instanceDeferreds:
-            self.instanceDeferreds[key] = Deferred()
-        return self.instanceDeferreds[key]
+        self.instanceDeferreds = defaultdict(Deferred)
+        self.instanceQueues = defaultdict(list)
 
     def handleCall(self, result):
         instance = result.protocol
+        for target in None, instance:
+            self.instanceQueues[target].append(result)
+            deferred = self.instanceDeferreds[target]
+            if target is None or not self.once:
+                del self.instanceDeferreds[target]
+            deferred.callback(result)
+
+    @inlineCallbacks
+    def expectCallback(self, instance, timeout):
+        queue = self.instanceQueues[instance]
+        if not queue:
+            deferred = self.instanceDeferreds[instance]
+            timeout = resolveTimeout(timeout)
+            yield deferred.addTimeout(timeout, reactor)
         if self.once:
-            deferreds = self.deferredFor(instance),
+            returnValue(queue[0])
         else:
-            deferreds = self.deferredFor(None), self.deferredFor(instance)
-            self.resetDeferredFor(instance)
-
-        for d in deferreds:
-            d.callback(result)
-
-    def expectCallback(self, instance, handler, timeout):
-        timeout = resolveTimeout(timeout)
-        deferred = self.deferredFor(instance)
-        return deferred.addTimeout(timeout, reactor).addCallback(handler)
+            returnValue(queue.pop(0))
 
 
 class BoundHook(object):
@@ -65,14 +56,13 @@ class BoundHook(object):
         self.state.handleCall(Result(self.instance, args, kw, result))
         return result
 
-    def _decode(self, decoder, result):
+    @inlineCallbacks
+    def called(self, decoder=None, timeout=None):
+        result = yield self.state.expectCallback(self.instance, timeout)
         decoder = decoder or self.decoder
         if decoder is None:
-            return result
-        return decoder(*result.args, **result.kw)
-
-    def called(self, decoder=None, timeout=None):
-        return self.state.expectCallback(self.instance, partial(self._decode, decoder), timeout)
+            returnValue(result)
+        returnValue(decoder(*result.args, **result.kw))
 
 
 class HookedCall(object):
@@ -88,8 +78,10 @@ class HookedCall(object):
             return self
         return BoundHook(self.state, self.original, instance, self.decoder)
 
+    @inlineCallbacks
     def protocol(self, timeout=None):
-        return self.state.expectCallback(None, lambda result: result.protocol, timeout)
+        result = yield self.state.expectCallback(None, timeout)
+        returnValue(result.protocol)
 
 
 class Hooked: pass
