@@ -17,9 +17,9 @@ class TestLineReceiverServer(TestCase):
     def setUp(self):
         context = Context()
         server = context.makeTCPServer(EchoServer)
-        client = yield context.makeTCPClient(ClientProtocol, server=server)
+        client = yield context.makeTCPClient(ClientProtocol, server)
         hookMethod(client.protocolClass, 'lineReceived', decoder=lambda line: line)
-        self.client = yield client.clientProtocol
+        self.client = client.clientProtocol
         self.connection = client.connection
         self.addCleanup(context.cleanup)
 
