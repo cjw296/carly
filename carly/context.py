@@ -47,9 +47,8 @@ class Context(object):
         self.cleanupTCPServer(server)
         return server
 
-    def cleanupTCPServer(self, server, timeout=None):
+    def cleanupTCPServer(self, server):
         hookMethod(server.protocolClass, 'connectionLost', once=True)
-        timeout = resolveTimeout(timeout)
         self.cleanups['listens'].append(
             partial(maybeDeferred, server.port.stopListening)
         )
