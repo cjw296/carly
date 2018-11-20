@@ -37,9 +37,12 @@ class HookState(object):
 
     def handleCall(self, result):
         instance = result.protocol
-        deferreds = self.deferredFor(None), self.deferredFor(instance)
-        if not self.once:
+        if self.once:
+            deferreds = self.deferredFor(instance),
+        else:
+            deferreds = self.deferredFor(None), self.deferredFor(instance)
             self.resetDeferredFor(instance)
+
         for d in deferreds:
             d.callback(result)
 
