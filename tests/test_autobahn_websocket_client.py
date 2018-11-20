@@ -8,7 +8,7 @@ from carly import Context, hookMethod
 from .autobahn_websocket import MyServerProtocol
 
 
-class TestWebSocketServer(TestCase):
+class TestWebSocketClient(TestCase):
 
     @inlineCallbacks
     def setUp(self):

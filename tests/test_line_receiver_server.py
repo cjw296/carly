@@ -17,9 +17,9 @@ class TestLineReceiverServer(TestCase):
     def setUp(self):
         context = Context()
         server = context.makeTCPServer(EchoServer)
-        client = context.makeTCPClient(ClientProtocol, port=server.port)
+        client = yield context.makeTCPClient(ClientProtocol, server=server)
         hookMethod(client.protocolClass, 'lineReceived', decoder=lambda line: line)
-        self.client = yield client.protocol
+        self.client = yield client.clientProtocol
         self.connection = client.connection
         self.addCleanup(context.cleanup)
 
@@ -43,9 +43,8 @@ class TestLineReceiverServer(TestCase):
         line = yield self.client.lineReceived.called()
         compare(line, expected='hello')
         self.client.sendLine('goodbye')
-        # also test explicit decoder:
-        line = yield self.client.lineReceived.called(lambda line: line+'!')
-        compare(line, expected='goodbye!')
+        line = yield self.client.lineReceived.called()
+        compare(line, expected='goodbye')
 
     @inlineCallbacks
     def testSendTwoMessagesReceveBoth(self):

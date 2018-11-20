@@ -76,15 +76,13 @@ class HookedCall(object):
         return self._expectCallback(lambda result: result.protocol, timeout)
 
 
-def hook(class_, *names):
+def hook(class_, initial):
     methods = {'__carly_hooked__': True}
-    for name in names:
-        d = Deferred()
-        methods[name] = HookedCall(class_, name)
+    methods[initial] = HookedCall(class_, initial)
 
     if issubclass(class_, object):
         type_ = type
-    else:  # pragma: no cover
+    else:
         # some protocols don't have object has a base class!
         type_ = ClassType
 

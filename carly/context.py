@@ -3,14 +3,16 @@ from functools import partial
 from collections import namedtuple
 
 from twisted.internet import reactor
-from twisted.internet.defer import inlineCallbacks, gatherResults, maybeDeferred
+from twisted.internet.defer import inlineCallbacks, gatherResults, \
+    maybeDeferred, returnValue
 from twisted.internet.protocol import Factory, ClientFactory
 
 from .hook import hook, hookMethod
 from .timeout import resolveTimeout
 
-TCPServer = namedtuple('TCPServer', ['protocolClass', 'port', 'protocol'])
-TCPClient = namedtuple('TCPClient', ['protocolClass', 'connection', 'protocol'])
+TCPServer = namedtuple('TCPServer', ['protocolClass', 'port'])
+TCPClient = namedtuple('TCPClient', ['protocolClass', 'connection',
+                                     'clientProtocol', 'serverProtocol'])
 
 
 class Context(object):
@@ -41,40 +43,37 @@ class Context(object):
             factory = Factory()
         factory.protocol = protocolClass
         port = reactor.listenTCP(0, factory, interface=interface)
-        server = TCPServer(
-            protocolClass, port, protocolClass.connectionMade.protocol()
-        )
+        server = TCPServer(protocolClass, port)
         self.cleanupTCPServer(server)
         return server
 
     def cleanupTCPServer(self, server, timeout=None):
         hookMethod(server.protocolClass, 'connectionLost', once=True)
         timeout = resolveTimeout(timeout)
-        self.cleanups['connections'].append(
-            partial(server.protocolClass.connectionLost.called, timeout=timeout)
-        )
         self.cleanups['listens'].append(
             partial(maybeDeferred, server.port.stopListening)
         )
 
-    def makeTCPClient(self, protocol, port, factory=None, when='connectionMade'):
+    @inlineCallbacks
+    def makeTCPClient(self, protocol, server, factory=None, when='connectionMade'):
         protocolClass = hook(protocol, when)
         if factory is None:
             factory = ClientFactory()
         factory.protocol = protocolClass
-        connection = reactor.connectTCP('localhost', port.getHost().port, factory)
-        client = TCPClient(
-            protocolClass, connection, getattr(protocolClass, when).protocol()
-        )
+        connection = reactor.connectTCP('localhost', server.port.getHost().port, factory)
+        clientProtocol = yield getattr(protocolClass, when).protocol()
+        serverProtocol = yield server.protocolClass.connectionMade.protocol()
+        client = TCPClient(protocolClass, connection, clientProtocol, serverProtocol)
         self.cleanupTCPClient(client)
-        return client
+        returnValue(client)
 
     def cleanupTCPClient(self, client, timeout=None, when='connectionLost'):
         hookMethod(client.protocolClass, when, once=True)
         timeout = resolveTimeout(timeout)
         self.cleanups['connections'].extend((
             partial(maybeDeferred, client.connection.disconnect),
-            partial(client.protocolClass.connectionLost.called, timeout=timeout),
+            partial(client.clientProtocol.connectionLost.called, timeout=timeout),
+            partial(client.serverProtocol.connectionLost.called, timeout=timeout),
         ))
 
 
