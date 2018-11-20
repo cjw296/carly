@@ -61,8 +61,10 @@ class Context(object):
             factory = ClientFactory()
         factory.protocol = protocolClass
         connection = reactor.connectTCP('localhost', server.port.getHost().port, factory)
-        clientProtocol = yield getattr(protocolClass, when).protocol()
-        serverProtocol = yield server.protocolClass.connectionMade.protocol()
+        clientProtocol, serverProtocol = yield gatherResults([
+            getattr(protocolClass, when).protocol(),
+            server.protocolClass.connectionMade.protocol(),
+        ])
         client = TCPClient(protocolClass, connection, clientProtocol, serverProtocol)
         self.cleanupTCPClient(client)
         returnValue(client)
