@@ -77,9 +77,9 @@ class BoundHook(object):
 
 class HookedCall(object):
 
-    def __init__(self, class_, name, decoder=None, once=False):
+    def __init__(self, class_, original, decoder=None, once=False):
         self.state = HookState(once)
-        self.original = getattr(class_, name)
+        self.original = original
         self.decoder = decoder
         self.once = once
 
@@ -92,24 +92,22 @@ class HookedCall(object):
         return self.state.expectCallback(None, lambda result: result.protocol, timeout)
 
 
-def hook(class_, initial):
+class Hooked: pass
+
+
+def hookClass(class_):
     """
     Create a subclass that can have its methods hooked so the instance calls can
     be used to fire deferreds used in testing.
-
-    :param initial:
-      The method to hook in order to pick up the instance of the class being hooked.
     """
-    attrs = {'__carly_hooked__': True}
-    attrs[initial] = HookedCall(class_, initial)
-
-    if issubclass(class_, object):
-        type_ = type
-    else:
-        # some protocols don't have object has a base class!
-        type_ = ClassType
-
-    return type_('Hooked'+class_.__name__, (class_,), attrs)
+    if not issubclass(class_, Hooked):
+        if issubclass(class_, object):
+            type_ = type
+        else:
+            # some protocols don't have object has a base class!
+            type_ = ClassType
+        class_ = type_('Hooked'+class_.__name__, (Hooked, class_), {})
+    return class_
 
 
 def hookMethod(class_, name, decoder=None, once=False):
@@ -131,6 +129,8 @@ def hookMethod(class_, name, decoder=None, once=False):
       where the test may want to explicitly wait for this, while the tear down of the test
       will also need to wait on it.
     """
-    if not getattr(class_, '__carly_hooked__', False):
+    if not issubclass(class_, Hooked):
         raise AssertionError("Can't hook a method on an unhooked class")
-    setattr(class_, name, HookedCall(class_, name, decoder, once))
+    original = getattr(class_, name)
+    if not isinstance(original, HookedCall):
+        setattr(class_, name, HookedCall(class_, original, decoder, once))
