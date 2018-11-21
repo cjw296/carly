@@ -17,7 +17,7 @@ class TestWebSocketServer(TestCase):
         client = yield context.makeTCPClient(
             WebSocketClientProtocol, server, WebSocketClientFactory(), when='onOpen'
         )
-        hook(client.protocolClass, 'onMessage', decoder=lambda payload, _: payload)
+        hook(WebSocketClientProtocol, 'onMessage', decoder=lambda payload, _: payload)
         self.client = client.clientProtocol
         self.addCleanup(context.cleanup)
 

@@ -19,10 +19,8 @@ class TestChatServer(TestCase):
     @inlineCallbacks
     def setUp(self):
         context = Context()
-
         self.factory = ChatFactory()
         server = context.makeTCPServer(Chat, self.factory)
-
         hook(ClientProtocol, 'lineReceived', lambda line: line)
         self.client1 = (yield context.makeTCPClient(ClientProtocol, server)).clientProtocol
         self.client2 = (yield context.makeTCPClient(ClientProtocol, server)).clientProtocol

@@ -18,7 +18,7 @@ class TestAllInMethod(TestCase):
         context = Context()
         server = context.makeTCPServer(EchoServer)
         client = yield context.makeTCPClient(ClientProtocol, server)
-        hook(client.protocolClass, 'lineReceived', decoder=lambda line: line)
+        hook(ClientProtocol, 'lineReceived', decoder=lambda line: line)
         self.client = client.clientProtocol
         self.connection = client.connection
         yield context.cleanup()
@@ -38,7 +38,7 @@ class TestDetails(TestCase):
         context = Context()
         server = context.makeTCPServer(EchoServer)
         client = yield context.makeTCPClient(ClientProtocol, server)
-        hook(client.protocolClass, 'lineReceived', decoder=lambda line: line)
+        hook(ClientProtocol, 'lineReceived', decoder=lambda line: line)
         self.client = client.clientProtocol
         self.connection = client.connection
         self.addCleanup(context.cleanup)
