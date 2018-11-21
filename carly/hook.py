@@ -1,13 +1,9 @@
 from __future__ import print_function
 
-from functools import partial
 
 from collections import namedtuple, defaultdict
-
-from twisted.internet.defer import Deferred, inlineCallbacks, succeed, returnValue
 from twisted.internet import reactor
-
-from types import ClassType
+from twisted.internet.defer import Deferred, inlineCallbacks, returnValue
 
 from .timeout import resolveTimeout
 
@@ -67,11 +63,17 @@ class BoundHook(object):
 
 class HookedCall(object):
 
-    def __init__(self, class_, original, decoder=None, once=False):
+    all = {}
+
+    def __init__(self, class_, name, decoder=None, once=False):
+        self.original = getattr(class_, name)
+        self.class_ = class_
+        self.name = name
         self.state = HookState(once)
-        self.original = original
         self.decoder = decoder
         self.once = once
+        setattr(class_, name, self)
+        self.all[class_, name] = self
 
     def __get__(self, instance, owner):
         if instance is None:
@@ -83,26 +85,13 @@ class HookedCall(object):
         result = yield self.state.expectCallback(None, timeout)
         returnValue(result.protocol)
 
-
-class Hooked: pass
-
-
-def hookClass(class_):
-    """
-    Create a subclass that can have its methods hooked so the instance calls can
-    be used to fire deferreds used in testing.
-    """
-    if not issubclass(class_, Hooked):
-        if issubclass(class_, object):
-            type_ = type
-        else:
-            # some protocols don't have object has a base class!
-            type_ = ClassType
-        class_ = type_('Hooked'+class_.__name__, (Hooked, class_), {})
-    return class_
+    @classmethod
+    def cleanup(cls):
+        for key, hook in cls.all.items():
+            setattr(hook.class_, hook.name, hook.original)
 
 
-def hookMethod(class_, name, decoder=None, once=False):
+def hook(class_, name, decoder=None, once=False):
     """
     Hook a method on a hooked class such that tests can wait on it being called
     on a particular instance.
@@ -121,8 +110,10 @@ def hookMethod(class_, name, decoder=None, once=False):
       where the test may want to explicitly wait for this, while the tear down of the test
       will also need to wait on it.
     """
-    if not issubclass(class_, Hooked):
-        raise AssertionError("Can't hook a method on an unhooked class")
-    original = getattr(class_, name)
-    if not isinstance(original, HookedCall):
-        setattr(class_, name, HookedCall(class_, original, decoder, once))
+    method = getattr(class_, name)
+    if not isinstance(method, HookedCall):
+        method = HookedCall(class_, name, decoder, once)
+    return method
+
+
+cleanup = HookedCall.cleanup

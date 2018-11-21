@@ -1,4 +1,4 @@
 from __future__ import print_function
 
-from .hook import hookClass, hookMethod, Hooked
+from .hook import hook, cleanup
 from .context import Context

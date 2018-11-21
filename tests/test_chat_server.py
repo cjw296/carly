@@ -1,9 +1,9 @@
-from testfixtures import compare, Replacer
-from twisted.internet.defer import inlineCallbacks, gatherResults
+from testfixtures import compare
+from twisted.internet.defer import inlineCallbacks
 from twisted.protocols.basic import LineReceiver
 from twisted.trial.unittest import TestCase
 
-from carly import Context,  hookMethod, hookClass
+from carly import Context, hook
 from .chat_server import ChatFactory, Chat
 
 
@@ -20,19 +20,12 @@ class TestChatServer(TestCase):
     def setUp(self):
         context = Context()
 
-
-        Chat_ = hookClass(Chat)
-        r = Replacer()
-        r.replace('tests.chat_server.Chat', Chat_)
-        self.addCleanup(r.restore)
-
         self.factory = ChatFactory()
-        server = context.makeTCPServer(Chat_, self.factory)
+        server = context.makeTCPServer(Chat, self.factory)
 
-        protocolClass = hookClass(ClientProtocol)
-        hookMethod(protocolClass, 'lineReceived', lambda line: line)
-        self.client1 = (yield context.makeTCPClient(protocolClass, server)).clientProtocol
-        self.client2 = (yield context.makeTCPClient(protocolClass, server)).clientProtocol
+        hook(ClientProtocol, 'lineReceived', lambda line: line)
+        self.client1 = (yield context.makeTCPClient(ClientProtocol, server)).clientProtocol
+        self.client2 = (yield context.makeTCPClient(ClientProtocol, server)).clientProtocol
         self.addCleanup(context.cleanup)
 
     @inlineCallbacks

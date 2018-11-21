@@ -3,7 +3,7 @@ from twisted.internet.defer import inlineCallbacks
 from twisted.internet.protocol import Protocol
 from twisted.trial.unittest import TestCase
 
-from carly import Context, hookMethod
+from carly import Context, hook
 from .line_receiver import EchoClient
 
 
@@ -16,9 +16,9 @@ class TestLineReceiverClient(TestCase):
     def setUp(self):
         context = Context()
         server = context.makeTCPServer(ServerProtocol)
-        hookMethod(server.protocolClass, 'dataReceived', decoder=lambda data: data)
+        hook(server.protocolClass, 'dataReceived', decoder=lambda data: data)
         client = yield context.makeTCPClient(EchoClient, server)
-        hookMethod(client.protocolClass, 'lineReceived')
+        hook(client.protocolClass, 'lineReceived')
         self.client = client.clientProtocol
         self.server = client.serverProtocol
         self.addCleanup(context.cleanup)
