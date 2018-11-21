@@ -35,10 +35,16 @@ class TestChatServer(TestCase):
         self.client1.sendLine('chris')
         compare((yield self.client1.lineReceived.called()),
                 expected="Welcome, chris!")
+        # consume the client 2 greeting:
+        yield self.client2.lineReceived.called()
+
 
     @inlineCallbacks
     def testNameAlreadyTaken(self):
+        yield self.client1.lineReceived.called()
         self.client1.sendLine('dave')
+        yield self.client1.lineReceived.called()
+
         compare((yield self.client2.lineReceived.called()),
                 expected="What's your name?")
         self.client2.sendLine('dave')

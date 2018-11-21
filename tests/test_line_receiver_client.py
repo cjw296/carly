@@ -23,11 +23,13 @@ class TestLineReceiverClient(TestCase):
         self.server = client.serverProtocol
         self.addCleanup(context.cleanup)
 
+    @inlineCallbacks
     def testConnectDisconnect(self):
-        pass
+        yield self.server.dataReceived.called()
 
     @inlineCallbacks
     def testServerDisconnectsDuringTest(self):
+        yield self.server.dataReceived.called()
         self.server.transport.loseConnection()
         yield self.server.connectionLost.called()
 
@@ -36,6 +38,7 @@ class TestLineReceiverClient(TestCase):
         self.server.transport.write(EchoClient.end+EchoClient.delimiter)
         yield self.client.lineReceived.called()
         yield self.server.connectionLost.called()
+        yield self.server.dataReceived.called()
 
     @inlineCallbacks
     def testMessages(self):

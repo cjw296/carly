@@ -1,13 +1,21 @@
 from __future__ import print_function
 
+from pprint import pformat
 
+from attr import attrs, attrib
 from collections import namedtuple, defaultdict
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred, inlineCallbacks, returnValue
 
 from .timeout import resolveTimeout
 
-Result = namedtuple('Result', ['protocol', 'args', 'kw', 'result'])
+@attrs(slots=True)
+class Result(object):
+    protocol = attrib(repr=False)
+    args = attrib()
+    kw = attrib()
+    result = attrib(repr=False)
+    consumed = attrib(repr=False, default=False)
 
 
 class HookState(object):
@@ -34,9 +42,20 @@ class HookState(object):
             timeout = resolveTimeout(timeout)
             yield deferred.addTimeout(timeout, reactor)
         if self.once:
-            returnValue(queue[0])
+            result = queue[0]
         else:
-            returnValue(queue.pop(0))
+            result = queue.pop(0)
+        result.consumed = True
+        returnValue(result)
+
+    def cleanup(self):
+        allUnconsumed = {}
+        for instance, queue in self.instanceQueues.items():
+            unconsumed = tuple(r for r in queue if not r.consumed)
+            if unconsumed:
+                allUnconsumed[instance] = unconsumed
+            queue[:] = []
+        return allUnconsumed
 
 
 class BoundHook(object):
@@ -59,6 +78,15 @@ class BoundHook(object):
         if decoder is None:
             returnValue(result)
         returnValue(decoder(*result.args, **result.kw))
+
+
+class UnconsumedCalls(AssertionError):
+
+    def __init__(self, unconsumed):
+        self.unconsumed = unconsumed
+
+    def __str__(self):
+        return pformat(self.unconsumed)
 
 
 class HookedCall(object):
@@ -87,8 +115,14 @@ class HookedCall(object):
 
     @classmethod
     def cleanup(cls):
+        allUnconsumed = {}
         for key, hook in cls.all.items():
             setattr(hook.class_, hook.name, hook.original)
+            unconsumed = hook.state.cleanup()
+            if unconsumed:
+                allUnconsumed[key] = unconsumed
+        if allUnconsumed:
+            raise UnconsumedCalls(allUnconsumed)
 
 
 def hook(class_, name, decoder=None, once=False):

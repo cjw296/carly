@@ -1,4 +1,3 @@
-from twisted.internet.defer import inlineCallbacks
 from twisted.internet.protocol import Factory
 from twisted.internet.task import LoopingCall
 from twisted.protocols.basic import LineReceiver
@@ -38,7 +37,7 @@ class Chat(LineReceiver):
     def handle_CHAT(self, message):
         message = "<%s> %s" % (self.name, message)
         for name, protocol in self.users.iteritems():
-            # if protocol != self:
+            if protocol != self:
                 protocol.sendLine(message)
 
 
