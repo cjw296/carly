@@ -51,6 +51,8 @@ class HookState(object):
     def cleanup(self):
         allUnconsumed = {}
         for instance, queue in self.instanceQueues.items():
+            if instance is None:
+                continue
             unconsumed = tuple(r for r in queue if not r.consumed)
             if unconsumed:
                 allUnconsumed[instance] = unconsumed
@@ -86,7 +88,7 @@ class UnconsumedCalls(AssertionError):
         self.unconsumed = unconsumed
 
     def __str__(self):
-        return pformat(self.unconsumed)
+        return '\n'+pformat(self.unconsumed)
 
 
 class HookedCall(object):
