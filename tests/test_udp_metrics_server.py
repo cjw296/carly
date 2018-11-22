@@ -6,12 +6,12 @@ from carly import Context
 from .udp_metrics import CollectorProtocol
 
 
-class TestLineReceiverServer(TestCase):
+class TestUDPCollector(TestCase):
 
     def setUp(self):
         context = Context()
-        self.server = CollectorProtocol()
-        self.udp = context.makeUDP(self.server)
+        self.collector = CollectorProtocol()
+        self.udp = context.makeUDP(self.collector)
         self.addCleanup(context.cleanup)
 
     def testDoNothing(self):
@@ -21,15 +21,15 @@ class TestLineReceiverServer(TestCase):
     def testOneClient(self):
         self.udp.send('{"id": "a"}')
         self.udp.send('{"id": "a"}')
-        yield self.server.datagramReceived.called()
-        compare(self.server.counts, expected={'a': 1})
-        yield self.server.datagramReceived.called()
-        compare(self.server.counts, expected={'a': 2})
+        yield self.collector.datagramReceived.called()
+        compare(self.collector.counts, expected={'a': 1})
+        yield self.collector.datagramReceived.called()
+        compare(self.collector.counts, expected={'a': 2})
 
     @inlineCallbacks
     def testMultipleClient(self):
         self.udp.send('{"id": "a"}')
         self.udp.send('{"id": "b"}')
-        yield self.server.datagramReceived.called()
-        yield self.server.datagramReceived.called()
-        compare(self.server.counts, expected={'a': 1, 'b': 1})
+        yield self.collector.datagramReceived.called()
+        yield self.collector.datagramReceived.called()
+        compare(self.collector.counts, expected={'a': 1, 'b': 1})
