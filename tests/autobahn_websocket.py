@@ -18,16 +18,8 @@ class MyClientProtocol(WebSocketClientProtocol):
 
     @inlineCallbacks
     def onOpen(self):
-        print("WebSocket connection open.")
-
+        count = 0
         while True:
-            print("Sending Messages")
-            self.sendMessage(u"Hello, world!".encode('utf8'))
-            self.sendMessage(b"\x00\x01\x03\x04", isBinary=True)
+            count += 1
+            self.sendMessage((u"tick "+str(count)).encode('utf8'))
             yield sleep(1)
-
-    def onMessage(self, payload, isBinary):
-        if isBinary:
-            print("Binary message received: {0} bytes".format(len(payload)))
-        else:
-            print("Text message received: {0}".format(payload.decode('utf8')))

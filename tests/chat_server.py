@@ -58,7 +58,8 @@ class ChatFactory(Factory):
         self.count += 1
 
     def start(self, tickInterval=1) :
-        self.loop = LoopingCall(self.tick).start(tickInterval)
+        self.loop = LoopingCall(self.tick)
+        self.loop.start(tickInterval)
 
     def stop(self):
         if self.loop.running:

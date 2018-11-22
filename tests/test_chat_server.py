@@ -3,7 +3,7 @@ from twisted.internet.defer import inlineCallbacks
 from twisted.protocols.basic import LineReceiver
 from twisted.trial.unittest import TestCase
 
-from carly import Context, hook
+from carly import Context, hook, advanceTime
 from .chat_server import ChatFactory, Chat
 
 
@@ -50,7 +50,7 @@ class TestChatServer(TestCase):
                 expected="Name taken, please choose another.")
 
     @inlineCallbacks
-    def testChat(self):
+    def loginClients(self):
         # greetings
         yield self.client1.lineReceived.called()
         yield self.client2.lineReceived.called()
@@ -60,6 +60,26 @@ class TestChatServer(TestCase):
         # login
         yield self.client1.lineReceived.called()
         yield self.client2.lineReceived.called()
+
+    @inlineCallbacks
+    def testChat(self):
+        yield self.loginClients()
         self.client1.sendLine('Hi!')
         result = yield self.client2.lineReceived.called()
         compare(result, expected='<dave> Hi!')
+
+    @inlineCallbacks
+    def testTick(self):
+        yield self.loginClients()
+        self.factory.start()
+        advanceTime(seconds=1.1)
+        compare((yield self.client1.lineReceived.called()),
+                expected="<tick> 0")
+        compare((yield self.client2.lineReceived.called()),
+                expected="<tick> 0")
+        advanceTime(seconds=1.1)
+        compare((yield self.client1.lineReceived.called()),
+                expected="<tick> 1")
+        compare((yield self.client2.lineReceived.called()),
+                expected="<tick> 1")
+        self.factory.stop()

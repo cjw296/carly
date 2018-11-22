@@ -3,11 +3,11 @@ from __future__ import print_function
 from pprint import pformat
 
 from attr import attrs, attrib
-from collections import namedtuple, defaultdict
-from twisted.internet import reactor
+from collections import defaultdict
 from twisted.internet.defer import Deferred, inlineCallbacks, returnValue
 
-from .timeout import resolveTimeout
+from .clock import withTimeout
+
 
 @attrs(slots=True)
 class Result(object):
@@ -39,8 +39,7 @@ class HookState(object):
         queue = self.instanceQueues[instance]
         if not queue:
             deferred = self.instanceDeferreds[instance]
-            timeout = resolveTimeout(timeout)
-            yield deferred.addTimeout(timeout, reactor)
+            yield withTimeout(deferred, timeout)
         if self.once:
             result = queue[0]
         else:
