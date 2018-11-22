@@ -4,7 +4,7 @@ from twisted.internet import reactor
 from twisted.internet.defer import (
     inlineCallbacks, gatherResults, maybeDeferred, returnValue
 )
-from twisted.internet.protocol import Factory, ClientFactory
+from twisted.internet.protocol import Factory, ClientFactory, DatagramProtocol
 
 from .clock import withTimeout
 from .hook import hook, cleanup
@@ -12,6 +12,20 @@ from .hook import hook, cleanup
 TCPServer = make_class('TCPServer', ['protocolClass', 'port'])
 TCPClient = make_class('TCPClient', ['protocolClass', 'connection',
                                      'clientProtocol', 'serverProtocol'])
+
+
+class UDP(DatagramProtocol):
+
+    def __init__(self, port, protocol):
+        self.port = port
+        self.protocol = protocol
+
+    def startProtocol(self):
+        host = self.port.getHost()
+        self.transport.connect(host.host, host.port)
+
+    def send(self, datagram):
+        self.transport.write(datagram)
 
 
 class Context(object):
@@ -36,6 +50,11 @@ class Context(object):
         yield self._cleanup(self.cleanups['listens'], timeout)
         cleanup()
 
+    def cleanupServers(self, *ports):
+        self.cleanups['listens'].extend(
+            partial(maybeDeferred, port.stopListening) for port in ports
+        )
+
     def makeTCPServer(self, protocol, factory=None, interface='127.0.0.1'):
         hook(protocol, 'connectionMade')
         if factory is None:
@@ -48,9 +67,7 @@ class Context(object):
 
     def cleanupTCPServer(self, server):
         hook(server.protocolClass, 'connectionLost', once=True)
-        self.cleanups['listens'].append(
-            partial(maybeDeferred, server.port.stopListening)
-        )
+        self.cleanupServers(server.port)
 
     @inlineCallbacks
     def makeTCPClient(self, protocol, server, factory=None, when='connectionMade'):
@@ -58,7 +75,8 @@ class Context(object):
         if factory is None:
             factory = ClientFactory()
         factory.protocol = protocol
-        connection = reactor.connectTCP('localhost', server.port.getHost().port, factory)
+        host = server.port.getHost()
+        connection = reactor.connectTCP(host.host, host.port, factory)
         clientProtocol, serverProtocol = yield gatherResults([
             getattr(protocol, when).protocol(),
             server.protocolClass.connectionMade.protocol(),
@@ -75,4 +93,11 @@ class Context(object):
             partial(client.serverProtocol.connectionLost.called, timeout=timeout),
         ))
 
+    def makeUDP(self, protocol, interface='127.0.0.1'):
+        hook(protocol.__class__, 'datagramReceived')
+        port = reactor.listenUDP(0, protocol, interface)
+        udp = UDP(port, protocol)
+        sendPort = reactor.listenUDP(0, udp, interface)
+        self.cleanupServers(port, sendPort)
+        return udp
 
