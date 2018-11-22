@@ -1,4 +1,4 @@
-from collections import namedtuple
+from attr import make_class
 from functools import partial
 from twisted.internet import reactor
 from twisted.internet.defer import (
@@ -9,9 +9,8 @@ from twisted.internet.protocol import Factory, ClientFactory
 from .clock import withTimeout
 from .hook import hook, cleanup
 
-
-TCPServer = namedtuple('TCPServer', ['protocolClass', 'port'])
-TCPClient = namedtuple('TCPClient', ['protocolClass', 'connection',
+TCPServer = make_class('TCPServer', ['protocolClass', 'port'])
+TCPClient = make_class('TCPClient', ['protocolClass', 'connection',
                                      'clientProtocol', 'serverProtocol'])
 
 
