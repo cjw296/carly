@@ -19,10 +19,12 @@ class UDP(DatagramProtocol):
     def __init__(self, port, protocol):
         self.port = port
         self.protocol = protocol
+        host = self.port.getHost()
+        self.targetHost = host.host
+        self.targetPort = host.port
 
     def startProtocol(self):
-        host = self.port.getHost()
-        self.transport.connect(host.host, host.port)
+        self.transport.connect(self.targetHost, self.targetPort)
 
     def send(self, datagram):
         self.transport.write(datagram)

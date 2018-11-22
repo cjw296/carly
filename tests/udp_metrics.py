@@ -26,7 +26,6 @@ class SenderProtocol(DatagramProtocol):
     def startProtocol(self):
         self.transport.connect(self.targetIp, self.targetPort)
         self.loop.start(1)
-        self.sendDatagram()
 
     def ping(self):
         self.transport.write(json.dumps({'id': 'client'+str(id(self))}))

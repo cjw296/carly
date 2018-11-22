@@ -70,7 +70,8 @@ class BoundHook(object):
     def __call__(self, *args, **kw):
         result = self.original(self.instance, *args, **kw)
         self.state.handleCall(Result(self.instance, args, kw, result))
-        return result
+        if self.decoder is not Result:
+            return result
 
     @inlineCallbacks
     def called(self, decoder=None, timeout=None):
@@ -78,6 +79,8 @@ class BoundHook(object):
         decoder = decoder or self.decoder
         if decoder is None:
             returnValue(result)
+        if decoder is Result:
+            returnValue(result.result)
         returnValue(decoder(*result.args, **result.kw))
 
 
@@ -93,6 +96,7 @@ class UnconsumedCalls(AssertionError):
 class HookedCall(object):
 
     all = {}
+    registeredClasses = set()
 
     def __init__(self, class_, name, decoder=None, once=False):
         self.original = getattr(class_, name)
@@ -115,6 +119,44 @@ class HookedCall(object):
         returnValue(result.protocol)
 
     @classmethod
+    def hook(cls, class_, name, decoder=None, once=False):
+        """
+        Hook a method on a hooked class such that tests can wait on it being called
+        on a particular instance.
+
+        :param name:
+          The name of the method to hook.
+
+        :param decoder:
+          A callable that will be used to decode the result of the method being called.
+          It should take the same arguments and parameters as the method being hooked and should
+          return whatever is required by the test that is going to wait on calls to this method.
+
+        :param once:
+          Only expect one call on this method. Multiple waits in a test will all end up
+          waiting on the same call. This is most useful when hooking connections going away,
+          where the test may want to explicitly wait for this, while the tear down of the test
+          will also need to wait on it.
+        """
+        # opportunistic register:
+        cls.register(class_)
+        method = getattr(class_, name)
+        if not isinstance(method, HookedCall):
+            method = HookedCall(class_, name, decoder, once)
+        return method
+
+    def unHook(self):
+        setattr(self.class_, self.name, self.original)
+
+    @classmethod
+    def register(cls, class_):
+        if class_ not in cls.registeredClasses:
+            cls.registeredClasses.add(class_)
+            for name, obj in vars(class_).items():
+                if getattr(obj, '__carly__decoder__', False):
+                    cls.hook(class_, name, decoder=Result)
+
+    @classmethod
     def cleanup(cls):
         allUnconsumed = {}
         for key, hook in cls.all.items():
@@ -122,33 +164,21 @@ class HookedCall(object):
             unconsumed = hook.state.cleanup()
             if unconsumed:
                 allUnconsumed[key] = unconsumed
+            hook.unHook()
+        cls.registeredClasses = set()
         if allUnconsumed:
             raise UnconsumedCalls(allUnconsumed)
 
 
-def hook(class_, name, decoder=None, once=False):
-    """
-    Hook a method on a hooked class such that tests can wait on it being called
-    on a particular instance.
 
-    :param name:
-      The name of the method to hook.
-
-    :param decoder:
-      A callable that will be used to decode the result of the method being called.
-      It should take the same arguments and parameters as the method being hooked and should
-      return whatever is required by the test that is going to wait on calls to this method.
-
-    :param once:
-      Only expect one call on this method. Multiple waits in a test will all end up
-      waiting on the same call. This is most useful when hooking connections going away,
-      where the test may want to explicitly wait for this, while the tear down of the test
-      will also need to wait on it.
-    """
-    method = getattr(class_, name)
-    if not isinstance(method, HookedCall):
-        method = HookedCall(class_, name, decoder, once)
-    return method
-
-
+hook = HookedCall.hook
 cleanup = HookedCall.cleanup
+register = HookedCall.register
+
+
+def decoder(method):
+    """
+    Mark a method as decoder when it is hooked.
+    """
+    method.__carly__decoder__ = True
+    return method

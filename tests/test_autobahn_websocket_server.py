@@ -1,5 +1,6 @@
-from autobahn.twisted import WebSocketClientProtocol, WebSocketClientFactory, \
-    WebSocketServerFactory
+from autobahn.twisted import (
+    WebSocketClientProtocol, WebSocketClientFactory, WebSocketServerFactory
+)
 from testfixtures import compare
 from twisted.internet.defer import inlineCallbacks
 from twisted.trial.unittest import TestCase

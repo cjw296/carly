@@ -3,7 +3,7 @@ from twisted.internet.defer import inlineCallbacks
 from twisted.protocols.basic import LineReceiver
 from twisted.trial.unittest import TestCase
 
-from carly import Context, hook, advanceTime
+from carly import Context, advanceTime, decoder
 from .chat_server import ChatFactory, Chat
 
 
@@ -11,7 +11,9 @@ class ClientProtocol(LineReceiver):
 
     delimiter = b'\n'
 
-    def lineReceived(self, line): pass
+    @decoder
+    def lineReceived(self, line):
+        return line
 
 
 class TestChatServer(TestCase):
@@ -21,7 +23,6 @@ class TestChatServer(TestCase):
         context = Context()
         self.factory = ChatFactory()
         server = context.makeTCPServer(Chat, self.factory)
-        hook(ClientProtocol, 'lineReceived', lambda line: line)
         self.client1 = (yield context.makeTCPClient(ClientProtocol, server)).clientProtocol
         self.client2 = (yield context.makeTCPClient(ClientProtocol, server)).clientProtocol
         self.addCleanup(context.cleanup)

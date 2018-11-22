@@ -13,7 +13,6 @@ class MyServerProtocol(WebSocketServerProtocol):
             self.sendMessage(payload, isBinary=False)
 
 
-
 class MyClientProtocol(WebSocketClientProtocol):
 
     @inlineCallbacks
