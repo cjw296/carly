@@ -9,9 +9,17 @@ from twisted.internet.protocol import Factory, ClientFactory, DatagramProtocol
 from .clock import withTimeout
 from .hook import hook, cleanup
 
-TCPServer = make_class('TCPServer', ['protocolClass', 'port'])
 TCPClient = make_class('TCPClient', ['protocolClass', 'connection',
                                      'clientProtocol', 'serverProtocol'])
+
+class TCPServer(object):
+
+    def __init__(self, protocolClass, port):
+        self.protocolClass = protocolClass
+        self.port = port
+        host = self.port.getHost()
+        self.targetHost = host.host
+        self.targetPort = host.port
 
 
 class UDP(DatagramProtocol):
