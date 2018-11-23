@@ -22,7 +22,7 @@ class TestChatServer(TestCase):
     def setUp(self):
         context = Context()
         self.factory = ChatFactory()
-        server = context.makeTCPServer(Chat, self.factory)
+        server = context.makeTCPServer(Chat, self.factory, installProtocol=False)
         self.client1 = (yield context.makeTCPClient(ClientProtocol, server)).clientProtocol
         self.client2 = (yield context.makeTCPClient(ClientProtocol, server)).clientProtocol
         self.addCleanup(context.cleanup)

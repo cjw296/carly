@@ -67,11 +67,13 @@ class Context(object):
             partial(maybeDeferred, port.stopListening) for port in ports
         )
 
-    def makeTCPServer(self, protocol, factory=None, interface='127.0.0.1'):
+    def makeTCPServer(self, protocol, factory=None, interface='127.0.0.1',
+                      installProtocol=True):
         hook(protocol, 'connectionMade')
         if factory is None:
             factory = Factory()
-        factory.protocol = protocol
+        if installProtocol:
+            factory.protocol = protocol
         port = reactor.listenTCP(0, factory, interface=interface)
         server = TCPServer(protocol, port)
         self.cleanupTCPServer(server)
