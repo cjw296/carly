@@ -1,3 +1,7 @@
+from __future__ import print_function
+
+from sys import stderr
+
 from twisted.internet import reactor
 
 DEFAULT_TIMEOUT = 0.2
@@ -23,6 +27,9 @@ def cancelDelayedCalls(expected=2):
     if len(calls) == expected:
         for call in calls:
             call.cancel()
+    else:
+        print('\n\nExpected {} delayed calls, found {}'.format(expected, len(calls)),
+              file=stderr)
 
 
 def advanceTime(seconds):
