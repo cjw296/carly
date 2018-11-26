@@ -1,7 +1,5 @@
 from __future__ import print_function
 
-from sys import stderr
-
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred
 
@@ -25,12 +23,15 @@ def cancelDelayedCalls(expected=2):
       generator at a time, and there's one for trial's 2 minute timeout.
     """
     calls = reactor.getDelayedCalls()
-    if len(calls) == expected:
-        for call in calls:
-            call.cancel()
-    else:
-        print('\n\nExpected {} delayed calls, found {}'.format(expected, len(calls)),
-              file=stderr)
+    strings = []
+    for call in calls:
+        strings.append(str(call))
+        call.cancel()
+    if len(calls) != expected:
+        raise AssertionError(
+            '\n\nExpected {} delayed calls, found {}: {}'.format(
+                expected, len(calls), strings
+        ))
 
 
 def advanceTime(seconds):
