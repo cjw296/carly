@@ -73,12 +73,12 @@ class TestChatServer(TestCase):
     def testTick(self):
         yield self.loginClients()
         self.factory.start()
-        advanceTime(seconds=1.1)
+        yield advanceTime(seconds=1.1)
         compare((yield self.client1.lineReceived.called()),
                 expected="<tick> 0")
         compare((yield self.client2.lineReceived.called()),
                 expected="<tick> 0")
-        advanceTime(seconds=1.1)
+        yield advanceTime(seconds=1.1)
         compare((yield self.client1.lineReceived.called()),
                 expected="<tick> 1")
         compare((yield self.client2.lineReceived.called()),

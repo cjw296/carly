@@ -20,23 +20,24 @@ def work(state, duration):
 
 class TestDeferToThread(TestCase):
 
-    fired = 0
+    def setUp(self):
+        self.fired = 0
 
     @inlineCallbacks
     def testWorkOne(self):
         LoopingCall(work, self, 0.001).start(2)
-        advanceTime(seconds=0.2)
+        yield advanceTime(seconds=0.2)
         yield waitForThreads()
-        compare(self.fired, expected=1)
         cancelDelayedCalls()
+        compare(self.fired, expected=1)
 
     @inlineCallbacks
     def testWorkTwo(self):
         LoopingCall(work, self, 0.001).start(2)
-        advanceTime(seconds=0.2)
+        yield advanceTime(seconds=0.2)
         yield waitForThreads()
-        compare(self.fired, expected=1)
         cancelDelayedCalls()
+        compare(self.fired, expected=1)
 
     @inlineCallbacks
     def testTimeout(self):

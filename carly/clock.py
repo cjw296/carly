@@ -3,6 +3,7 @@ from __future__ import print_function
 from sys import stderr
 
 from twisted.internet import reactor
+from twisted.internet.defer import Deferred
 
 DEFAULT_TIMEOUT = 0.2
 
@@ -42,3 +43,7 @@ def advanceTime(seconds):
         currentSecondsFromNow = call.getTime() - now
         newSecondsFromNow = max(0, currentSecondsFromNow - seconds)
         call.reset(newSecondsFromNow)
+    # give the reactor a chance to run calls we're brought forward:
+    d = Deferred()
+    reactor.callLater(0, lambda: d.callback(None))
+    return d

@@ -44,7 +44,7 @@ class TestWebSocketClient(TestCase):
     def testTwoMessages(self):
         compare((yield self.server.onMessage.called()), expected='tick 1')
         # advance time until after the loop will have fired:
-        advanceTime(seconds=1.1)
+        yield advanceTime(seconds=1.1)
         compare((yield self.server.onMessage.called()), expected='tick 2')
         # cancel the loop:
         cancelDelayedCalls()

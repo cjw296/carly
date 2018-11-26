@@ -41,6 +41,6 @@ class TestLineReceiverServer(TestCase):
         expectedId = 'client'+str(id(self.sender))
         data = yield self.receiver.datagramReceived.called()
         compare(data, expected={'id': expectedId})
-        advanceTime(seconds=1.1)
+        yield advanceTime(seconds=1.1)
         data = yield self.receiver.datagramReceived.called()
         compare(data, expected={'id': expectedId})
