@@ -13,3 +13,4 @@ attrs = "^18.2"
 [tool.poetry.dev-dependencies]
 testfixtures = "^6.3"
 autobahn = "^18.11"
+coverage = "<5"
