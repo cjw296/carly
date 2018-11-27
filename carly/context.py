@@ -39,6 +39,10 @@ class UDP(DatagramProtocol):
         self.transport.write(datagram)
 
 
+def disconnect(client):
+    client.connection.disconnect()
+
+
 class Context(object):
 
     def __init__(self):
@@ -70,6 +74,13 @@ class Context(object):
             partial(maybeDeferred, port.stopListening) for port in ports
         )
 
+    def cleanupClient(self, client, close, timeout=None):
+        self.cleanups['connections'].extend((
+            partial(maybeDeferred, close, client),
+            partial(client.clientProtocol.connectionLost.called, timeout=timeout),
+            partial(client.serverProtocol.connectionLost.called, timeout=timeout),
+        ))
+
     def makeTCPServer(self, protocol, factory=None, interface='127.0.0.1',
                       installProtocol=True):
         hook(protocol, 'connectionMade')
@@ -79,15 +90,13 @@ class Context(object):
             factory.protocol = protocol
         port = reactor.listenTCP(0, factory, interface=interface)
         server = TCPServer(protocol, port)
-        self.cleanupTCPServer(server)
-        return server
-
-    def cleanupTCPServer(self, server):
         hook(server.protocolClass, 'connectionLost', once=True)
         self.cleanupServers(server.port)
+        return server
 
     @inlineCallbacks
-    def makeTCPClient(self, protocol, server, factory=None, when='connectionMade'):
+    def makeTCPClient(self, protocol, server, factory=None,
+                      when='connectionMade', close=disconnect):
         hook(protocol, when)
         if factory is None:
             factory = ClientFactory()
@@ -99,16 +108,9 @@ class Context(object):
             server.protocolClass.connectionMade.protocol(),
         ])
         client = TCPClient(protocol, connection, clientProtocol, serverProtocol)
-        self.cleanupTCPClient(client)
+        hook(client.protocolClass, 'connectionLost', once=True)
+        self.cleanupClient(client, close)
         returnValue(client)
-
-    def cleanupTCPClient(self, client, timeout=None, when='connectionLost'):
-        hook(client.protocolClass, when, once=True)
-        self.cleanups['connections'].extend((
-            partial(maybeDeferred, client.connection.disconnect),
-            partial(client.clientProtocol.connectionLost.called, timeout=timeout),
-            partial(client.serverProtocol.connectionLost.called, timeout=timeout),
-        ))
 
     def makeUDP(self, protocol, interface='127.0.0.1'):
         hook(protocol.__class__, 'datagramReceived')

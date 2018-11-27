@@ -27,6 +27,9 @@ class ServerProtocol(WebSocketServerProtocol):
         else:
             yield deferToThread(self.blockingSendMessage)
 
+    def connectionLost(self, reason):
+        self.factory.state.clients.remove(self)
+
 
 class WebSocketState(object):
 
