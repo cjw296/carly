@@ -1,10 +1,11 @@
-from autobahn.twisted import WebSocketClientFactory, WebSocketServerFactory, WebSocketServerProtocol
+from autobahn.twisted import WebSocketServerFactory, WebSocketServerProtocol
 from testfixtures import compare
 from twisted.internet.defer import inlineCallbacks
 from twisted.trial.unittest import TestCase
 
 from carly import Context, hook, advanceTime
-from carly.tcp import makeTCPServer, makeTCPClient
+from carly.tcp import makeTCPServer
+from carly.websocket import makeWebSocketClient
 from .autobahn_websocket import MyClientProtocol
 
 
@@ -15,9 +16,7 @@ class TestWebSocketClient(TestCase):
         context = Context()
         server = makeTCPServer(context, WebSocketServerProtocol, WebSocketServerFactory())
         hook(WebSocketServerProtocol, 'onMessage', decoder=lambda payload, _: payload)
-        client = yield makeTCPClient(
-            context, MyClientProtocol, server, WebSocketClientFactory(), when='onOpen'
-        )
+        client = yield makeWebSocketClient(context, server, MyClientProtocol)
         self.server = client.serverProtocol
         # cancel the loop:
         self.addCleanup(context.cleanup, delayedCalls=1)
@@ -30,6 +29,10 @@ class TestWebSocketClient(TestCase):
     def testDisconnectDuringTest(self):
         self.server.transport.loseConnection()
         yield self.server.connectionLost.called()
+        # since we brutally shut the connection from the server side, advance time
+        # so the client waiting for its close frame times out:
+        yield advanceTime(1)
+        yield advanceTime(1)
 
     @inlineCallbacks
     def testOneMessage(self):

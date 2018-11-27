@@ -41,6 +41,9 @@ class Context(object):
         )
 
     def cleanupClient(self, client, close, timeout=None):
+        if isinstance(close, str):
+            name = close
+            close = lambda client: getattr(client.clientProtocol, name)()
         self.cleanups['connections'].extend((
             partial(maybeDeferred, close, client),
             partial(client.clientProtocol.connectionLost.called, timeout=timeout),

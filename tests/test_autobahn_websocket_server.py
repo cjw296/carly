@@ -1,12 +1,11 @@
-from autobahn.twisted import (
-    WebSocketClientProtocol, WebSocketClientFactory, WebSocketServerFactory
-)
+from autobahn.twisted import WebSocketClientProtocol, WebSocketServerFactory
 from testfixtures import compare
 from twisted.internet.defer import inlineCallbacks
 from twisted.trial.unittest import TestCase
 
 from carly import Context, hook
-from carly.tcp import makeTCPServer, makeTCPClient
+from carly.tcp import makeTCPServer
+from carly.websocket import makeWebSocketClient
 from .autobahn_websocket import MyServerProtocol
 
 
@@ -16,9 +15,7 @@ class TestWebSocketServer(TestCase):
     def setUp(self):
         context = Context()
         server = makeTCPServer(context, MyServerProtocol, WebSocketServerFactory())
-        client = yield makeTCPClient(
-            context, WebSocketClientProtocol, server, WebSocketClientFactory(), when='onOpen'
-        )
+        client = yield makeWebSocketClient(context, server)
         hook(WebSocketClientProtocol, 'onMessage', decoder=lambda payload, _: payload)
         self.client = client.clientProtocol
         self.addCleanup(context.cleanup)

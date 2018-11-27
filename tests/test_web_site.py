@@ -10,6 +10,7 @@ from twisted.web.client import Agent, readBody
 
 from carly import Context, decoder, advanceTime, hook
 from carly.tcp import TCPClient, makeTCPServer, makeTCPClient
+from carly.websocket import makeWebSocketClient
 from tests.web_site import buildSite, ServerProtocol
 
 
@@ -29,6 +30,7 @@ class ServerTester(WebSocketClientProtocol):
 
 class ServerTesterFactory(WebSocketClientFactory, ReconnectingClientFactory):
 
+    protocol = ServerTester
     initialDelay = 0.01
 
 
@@ -39,18 +41,14 @@ class TestWebSocketServer(TestCase):
         context = self.context = Context()
         self.dir = TempDirectory()
         self.addCleanup(self.dir.cleanup)
-        self.server = makeTCPServer(context, ServerProtocol,
-                                            buildSite('gotit', self.dir.path),
-                                            installProtocol=False)
-        factory = ServerTesterFactory("ws://{}:{}/spam".format(
-            self.server.targetHost, self.server.targetPort
-        ))
-        client = yield makeTCPClient(context,
-            ServerTester, self.server, factory, when='onOpen',
-            close=lambda client: client.clientProtocol.close()
-        )
         # make sure that we trap unexpected close messages:
         hook(ServerProtocol, 'sendClose')
+        self.server = makeTCPServer(
+            context, ServerProtocol, buildSite('gotit', self.dir.path), installProtocol=False
+        )
+        client = yield makeWebSocketClient(
+            context, self.server, factoryClass=ServerTesterFactory, close='close', endpoint='/spam'
+        )
         self.client = client.clientProtocol
         self.addCleanup(context.cleanup, threads=True, delayedCalls=1)
 
