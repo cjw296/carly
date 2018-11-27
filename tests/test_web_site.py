@@ -8,7 +8,7 @@ from twisted.internet.protocol import ReconnectingClientFactory
 from twisted.trial.unittest import TestCase
 from twisted.web.client import Agent, readBody
 
-from carly import Context, decoder, cancelDelayedCalls, advanceTime, waitForThreads
+from carly import Context, decoder, cancelDelayedCalls, advanceTime, waitForThreads, hook
 from tests.web_site import buildSite, ServerProtocol
 
 
@@ -35,6 +35,8 @@ class TestWebSocketServer(TestCase):
         client = yield context.makeTCPClient(
             ServerTester, self.server, factory, when='onOpen'
         )
+        # make sure that we trap unexpected close messages:
+        hook(ServerProtocol, 'sendClose')
         self.client = client.clientProtocol
         self.addCleanup(context.cleanup, threads=True, delayedCalls=1)
 
@@ -50,6 +52,7 @@ class TestWebSocketServer(TestCase):
     @inlineCallbacks
     def testSendBinary(self):
         self.client.sendMessage(b'hello', isBinary=True)
+        yield ServerProtocol.sendClose.called()
         yield self.client.connectionLost.called()
 
 

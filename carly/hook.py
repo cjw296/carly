@@ -59,6 +59,17 @@ class HookState(object):
         return allUnconsumed
 
 
+@inlineCallbacks
+def called(self, decoder, timeout, instance):
+    result = yield self.state.expectCallback(instance, timeout)
+    decoder = decoder or self.decoder
+    if decoder is None:
+        returnValue(result)
+    if decoder is Result:
+        returnValue(result.result)
+    returnValue(decoder(*result.args, **result.kw))
+
+
 class BoundHook(object):
 
     def __init__(self, state, original, instance, decoder):
@@ -73,15 +84,8 @@ class BoundHook(object):
         if self.decoder is not Result:
             return result
 
-    @inlineCallbacks
     def called(self, decoder=None, timeout=None):
-        result = yield self.state.expectCallback(self.instance, timeout)
-        decoder = decoder or self.decoder
-        if decoder is None:
-            returnValue(result)
-        if decoder is Result:
-            returnValue(result.result)
-        returnValue(decoder(*result.args, **result.kw))
+        return called(self, decoder, timeout, self.instance)
 
 
 class UnconsumedCalls(AssertionError):
@@ -117,6 +121,9 @@ class HookedCall(object):
     def protocol(self, timeout=None):
         result = yield self.state.expectCallback(None, timeout)
         returnValue(result.protocol)
+
+    def called(self, decoder=None, timeout=None):
+        return called(self, decoder, timeout, instance=None)
 
     @classmethod
     def hook(cls, class_, name, decoder=None, once=False):
