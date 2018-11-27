@@ -18,27 +18,22 @@ class TestWebSocketClient(TestCase):
             MyClientProtocol, server, WebSocketClientFactory(), when='onOpen'
         )
         self.server = client.serverProtocol
-        self.addCleanup(context.cleanup)
+        # cancel the loop:
+        self.addCleanup(context.cleanup, delayedCalls=1)
 
     @inlineCallbacks
     def testConnectDisconnect(self):
         yield self.server.onMessage.called()
-        # cancel the loop:
-        cancelDelayedCalls()
 
     @inlineCallbacks
     def testDisconnectDuringTest(self):
         self.server.transport.loseConnection()
         yield self.server.connectionLost.called()
-        # cancel the loop:
-        cancelDelayedCalls()
 
     @inlineCallbacks
     def testOneMessage(self):
         payload = yield self.server.onMessage.called()
         compare(payload, expected='tick 1')
-        # cancel the loop:
-        cancelDelayedCalls()
 
     @inlineCallbacks
     def testTwoMessages(self):
@@ -46,5 +41,3 @@ class TestWebSocketClient(TestCase):
         # advance time until after the loop will have fired:
         yield advanceTime(seconds=1.1)
         compare((yield self.server.onMessage.called()), expected='tick 2')
-        # cancel the loop:
-        cancelDelayedCalls()

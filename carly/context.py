@@ -8,6 +8,7 @@ from twisted.internet.protocol import Factory, ClientFactory, DatagramProtocol
 
 from .clock import withTimeout, cancelDelayedCalls
 from .hook import hook, cleanup
+from .threads import waitForThreads
 
 TCPClient = make_class('TCPClient', ['protocolClass', 'connection',
                                      'clientProtocol', 'serverProtocol'])
@@ -55,10 +56,12 @@ class Context(object):
         return gatherResults(deferreds)
 
     @inlineCallbacks
-    def cleanup(self, timeout=None, delayedCalls=None):
+    def cleanup(self, timeout=None, threads=False, delayedCalls=None):
         yield self._cleanup(self.cleanups['connections'], timeout)
         yield self._cleanup(self.cleanups['listens'], timeout)
         cleanup()
+        if threads:
+            yield waitForThreads()
         if delayedCalls:
             cancelDelayedCalls(delayedCalls)
 
