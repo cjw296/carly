@@ -6,8 +6,8 @@ from twisted.internet.protocol import Factory, ClientFactory
 
 from .hook import hook
 
-TCPClient = make_class('TCPClient', ['protocolClass', 'connection',
-                                     'clientProtocol', 'serverProtocol'])
+TCPClient = make_class('TCPClient', ['protocolClass', 'clientProtocol', 'serverProtocol'])
+
 
 class TCPServer(object):
 
@@ -37,10 +37,9 @@ def makeTCPServer(context, protocol, factory=None, interface='127.0.0.1',
 
 
 def disconnect(client):
-    client.connection.disconnect()
+    client.clientProtocol.transport.loseConnection()
 
 
-@inlineCallbacks
 def makeTCPClient(context, protocol, server, factory=None,
                   when='connectionMade', close=disconnect):
 
@@ -51,12 +50,18 @@ def makeTCPClient(context, protocol, server, factory=None,
         factory = ClientFactory()
     factory.protocol = protocol
     host = server.port.getHost()
-    connection = reactor.connectTCP(host.host, host.port, factory)
+    reactor.connectTCP(host.host, host.port, factory)
+    return waitForClient(
+        context, getattr(protocol, when), server.protocolClass.connectionMade, close
+    )
+
+
+@inlineCallbacks
+def waitForClient(context, clientConnected, serverConnected, close=disconnect):
     clientProtocol, serverProtocol = yield gatherResults([
-        getattr(protocol, when).protocol(),
-        server.protocolClass.connectionMade.protocol(),
+        clientConnected.protocol(), serverConnected.protocol(),
     ])
-    client = TCPClient(protocol, connection, clientProtocol, serverProtocol)
+    client = TCPClient(clientProtocol.__class__, clientProtocol, serverProtocol)
     hook(client.protocolClass, 'connectionLost', once=True)
     context.cleanupClient(client, close)
     returnValue(client)

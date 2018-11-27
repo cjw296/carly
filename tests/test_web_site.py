@@ -9,7 +9,7 @@ from twisted.trial.unittest import TestCase
 from twisted.web.client import Agent, readBody
 
 from carly import Context, decoder, advanceTime, hook
-from carly.tcp import TCPClient, makeTCPServer, makeTCPClient
+from carly.tcp import TCPClient, makeTCPServer, makeTCPClient, waitForClient
 from carly.websocket import makeWebSocketClient
 from tests.web_site import buildSite, ServerProtocol
 
@@ -81,24 +81,19 @@ class TestWebSocketServer(TestCase):
         yield ServerProtocol.sendClose.called()
         yield self.client.connectionLost.called()
 
-        clientProtocol, serverProtocol = yield gatherResults([
-            ServerTester.onOpen.protocol(),
-            ServerProtocol.connectionMade.protocol(),
-        ])
-
-        self.context.cleanupClient(
-            TCPClient(ServerTester, None, clientProtocol, serverProtocol),
-            lambda client: client.clientProtocol.close(),
+        client = yield waitForClient(
+            self.context, ServerTester.onOpen, ServerProtocol.connectionMade, 'close'
         )
+        server = client.serverProtocol
+        client = client.clientProtocol
 
-        client = clientProtocol
         client.sendMessage(b'hello')
         payload = yield client.onMessage.called()
         compare(payload, expected='gotit')
 
         # autobahn just doesn't use client protocol instances that aren't open, so
         # we manually check we're stripped out closed connections:
-        compare(serverProtocol.factory.state.clients, expected={serverProtocol})
+        compare(server.factory.state.clients, expected={server})
         advanceTime(seconds=2.1)
         payload = yield client.onMessage.called()
         compare(payload, expected='ping 1')
