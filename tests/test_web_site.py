@@ -9,7 +9,7 @@ from twisted.trial.unittest import TestCase
 from twisted.web.client import Agent, readBody
 
 from carly import Context, decoder, advanceTime, hook
-from carly.context import TCPClient
+from carly.tcp import TCPClient, makeTCPServer, makeTCPClient
 from tests.web_site import buildSite, ServerProtocol
 
 
@@ -39,13 +39,13 @@ class TestWebSocketServer(TestCase):
         context = self.context = Context()
         self.dir = TempDirectory()
         self.addCleanup(self.dir.cleanup)
-        self.server = context.makeTCPServer(ServerProtocol,
+        self.server = makeTCPServer(context, ServerProtocol,
                                             buildSite('gotit', self.dir.path),
                                             installProtocol=False)
         factory = ServerTesterFactory("ws://{}:{}/spam".format(
             self.server.targetHost, self.server.targetPort
         ))
-        client = yield context.makeTCPClient(
+        client = yield makeTCPClient(context,
             ServerTester, self.server, factory, when='onOpen',
             close=lambda client: client.clientProtocol.close()
         )

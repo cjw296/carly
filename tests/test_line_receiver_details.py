@@ -4,6 +4,7 @@ from twisted.protocols.basic import LineReceiver
 from twisted.trial.unittest import TestCase
 
 from carly import Context, hook, decoder
+from carly.tcp import makeTCPServer, makeTCPClient
 from .line_receiver import EchoServer
 
 
@@ -19,8 +20,8 @@ class TestAllInMethod(TestCase):
     @inlineCallbacks
     def testConnectDisconnect(self):
         context = Context()
-        server = context.makeTCPServer(EchoServer)
-        client = yield context.makeTCPClient(ClientProtocol, server)
+        server = makeTCPServer(context, EchoServer)
+        client = yield makeTCPClient(context, ClientProtocol, server)
         self.client = client.clientProtocol
         yield context.cleanup()
 
@@ -28,7 +29,7 @@ class TestAllInMethod(TestCase):
     @inlineCallbacks
     def testNoClient(self):
         context = Context()
-        context.makeTCPServer(EchoServer)
+        makeTCPServer(context, EchoServer)
         yield context.cleanup()
 
 
@@ -37,8 +38,8 @@ class TestDetails(TestCase):
     @inlineCallbacks
     def setUp(self):
         context = Context()
-        server = context.makeTCPServer(EchoServer)
-        client = yield context.makeTCPClient(ClientProtocol, server)
+        server = makeTCPServer(context, EchoServer)
+        client = yield makeTCPClient(context, ClientProtocol, server)
         self.client = client.clientProtocol
         self.addCleanup(context.cleanup)
 

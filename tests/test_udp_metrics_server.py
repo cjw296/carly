@@ -3,6 +3,7 @@ from twisted.internet.defer import inlineCallbacks
 from twisted.trial.unittest import TestCase
 
 from carly import Context
+from carly.udp import makeUDP
 from .udp_metrics import CollectorProtocol
 
 
@@ -11,7 +12,7 @@ class TestUDPCollector(TestCase):
     def setUp(self):
         context = Context()
         self.collector = CollectorProtocol()
-        self.udp = context.makeUDP(self.collector)
+        self.udp = makeUDP(context, self.collector)
         self.addCleanup(context.cleanup)
 
     def testDoNothing(self):

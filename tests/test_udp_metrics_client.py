@@ -6,6 +6,7 @@ from twisted.internet.protocol import DatagramProtocol
 from twisted.trial.unittest import TestCase
 
 from carly import Context, decoder, cancelDelayedCalls, advanceTime
+from carly.udp import makeUDP
 from .udp_metrics import SenderProtocol
 
 class Receiver(DatagramProtocol):
@@ -20,9 +21,9 @@ class TestLineReceiverServer(TestCase):
     def setUp(self):
         context = Context()
         self.receiver = Receiver()
-        udp = context.makeUDP(self.receiver)
+        udp = makeUDP(context, self.receiver)
         self.sender = SenderProtocol(udp.targetHost, udp.targetPort)
-        context.makeUDP(self.sender)
+        makeUDP(context, self.sender)
         self.addCleanup(context.cleanup)
         # stop the client loop:
         self.addCleanup(cancelDelayedCalls, expected=1)

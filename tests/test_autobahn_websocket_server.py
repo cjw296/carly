@@ -6,6 +6,7 @@ from twisted.internet.defer import inlineCallbacks
 from twisted.trial.unittest import TestCase
 
 from carly import Context, hook
+from carly.tcp import makeTCPServer, makeTCPClient
 from .autobahn_websocket import MyServerProtocol
 
 
@@ -14,9 +15,9 @@ class TestWebSocketServer(TestCase):
     @inlineCallbacks
     def setUp(self):
         context = Context()
-        server = context.makeTCPServer(MyServerProtocol, WebSocketServerFactory())
-        client = yield context.makeTCPClient(
-            WebSocketClientProtocol, server, WebSocketClientFactory(), when='onOpen'
+        server = makeTCPServer(context, MyServerProtocol, WebSocketServerFactory())
+        client = yield makeTCPClient(
+            context, WebSocketClientProtocol, server, WebSocketClientFactory(), when='onOpen'
         )
         hook(WebSocketClientProtocol, 'onMessage', decoder=lambda payload, _: payload)
         self.client = client.clientProtocol
