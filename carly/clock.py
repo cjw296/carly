@@ -1,7 +1,7 @@
 from __future__ import print_function
 
 from twisted.internet import reactor
-from twisted.internet.defer import Deferred
+from twisted.internet.defer import Deferred, inlineCallbacks
 
 DEFAULT_TIMEOUT = 0.2
 
@@ -34,17 +34,23 @@ def cancelDelayedCalls(expected=2):
         ))
 
 
+def _pump():
+    d = Deferred()
+    reactor.callLater(0, lambda: d.callback(None))
+    return d
+
+
+@inlineCallbacks
 def advanceTime(seconds):
     """
     Advance the reactor time by the number of seconds or partial seconds
     specified.
     """
+    yield _pump()
     now = reactor.seconds()
     for call in reactor.getDelayedCalls():
         currentSecondsFromNow = call.getTime() - now
         newSecondsFromNow = max(0, currentSecondsFromNow - seconds)
         call.reset(newSecondsFromNow)
     # give the reactor a chance to run calls we're brought forward:
-    d = Deferred()
-    reactor.callLater(0, lambda: d.callback(None))
-    return d
+    yield _pump()

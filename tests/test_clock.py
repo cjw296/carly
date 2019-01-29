@@ -1,8 +1,9 @@
 from testfixtures import ShouldRaise
 from twisted.internet import reactor
+from twisted.internet.defer import inlineCallbacks
 from twisted.trial.unittest import TestCase
 
-from carly import cancelDelayedCalls
+from carly import cancelDelayedCalls, advanceTime
 
 
 def call1(x): pass
@@ -21,3 +22,21 @@ class TestCancelDelayedCall(TestCase):
         assert actual.startswith('\n\nExpected 1 delayed calls, found 2: ['), actual
         assert 'call1(42)>' in actual
         assert 'call1(13)>' in actual
+
+
+def fire(called):
+    called.append(True)
+
+
+def fireLater(called):
+    reactor.callLater(5, fire, called)
+
+
+class TestAdvanceTime(TestCase):
+
+    @inlineCallbacks
+    def testLetDeferredsScheduleTheirCalls(self):
+        called = []
+        reactor.callLater(0, fireLater, called)
+        yield advanceTime(seconds=6)
+        assert called

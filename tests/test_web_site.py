@@ -94,7 +94,9 @@ class TestWebSocketServer(TestCase):
         # autobahn just doesn't use client protocol instances that aren't open, so
         # we manually check we're stripped out closed connections:
         compare(server.factory.state.clients, expected={server})
-        advanceTime(seconds=2.1)
+
+        yield advanceTime(seconds=2.1)
+        
         payload = yield client.onMessage.called()
         compare(payload, expected='ping 1')
 
