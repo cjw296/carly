@@ -17,4 +17,4 @@ install:
 - "source $HOME/.poetry/env"
 - "poetry install"
 
-script: coverage run -m twisted.trial
+script: coverage run -m twisted.trial tests
