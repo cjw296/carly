@@ -14,7 +14,7 @@ class Result(object):
     protocol = attrib(repr=False)
     args = attrib()
     kw = attrib()
-    result = attrib(repr=False)
+    result = attrib()
     consumed = attrib(repr=False, default=False)
 
 
