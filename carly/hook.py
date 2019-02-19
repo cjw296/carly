@@ -13,7 +13,7 @@ ORIGINAL_IS_DECODER = object()
 
 
 @attrs(slots=True)
-class Result(object):
+class Call(object):
     protocol = attrib(repr=False)
     args = attrib()
     kw = attrib()
@@ -28,14 +28,14 @@ class HookState(object):
         self.instanceDeferreds = defaultdict(Deferred)
         self.instanceQueues = defaultdict(list)
 
-    def handleCall(self, result):
-        instance = result.protocol
+    def handleCall(self, call):
+        instance = call.protocol
         for target in None, instance:
-            self.instanceQueues[target].append(result)
+            self.instanceQueues[target].append(call)
             deferred = self.instanceDeferreds[target]
             if target is None or not self.once:
                 del self.instanceDeferreds[target]
-            deferred.callback(result)
+            deferred.callback(call)
 
     @inlineCallbacks
     def expectCallback(self, instance, timeout):
@@ -44,11 +44,11 @@ class HookState(object):
             deferred = self.instanceDeferreds[instance]
             yield withTimeout(deferred, timeout)
         if self.once:
-            result = queue[0]
+            call = queue[0]
         else:
-            result = queue.pop(0)
-        result.consumed = True
-        returnValue(result)
+            call = queue.pop(0)
+        call.consumed = True
+        returnValue(call)
 
     def cleanup(self):
         allUnconsumed = {}
@@ -64,13 +64,13 @@ class HookState(object):
 
 @inlineCallbacks
 def called(self, decoder, timeout, instance):
-    result = yield self.state.expectCallback(instance, timeout)
+    call = yield self.state.expectCallback(instance, timeout)
     decoder = decoder or self.decoder
     if decoder is None:
-        returnValue(result)
+        returnValue(call)
     if decoder is ORIGINAL_IS_DECODER:
-        returnValue(result.result)
-    returnValue(decoder(*result.args, **result.kw))
+        returnValue(call.result)
+    returnValue(decoder(*call.args, **call.kw))
 
 
 class BoundHook(object):
@@ -83,7 +83,7 @@ class BoundHook(object):
 
     def __call__(self, *args, **kw):
         result = self.original(self.instance, *args, **kw)
-        self.state.handleCall(Result(self.instance, args, kw, result))
+        self.state.handleCall(Call(self.instance, args, kw, result))
         if self.decoder is not ORIGINAL_IS_DECODER:
             return result
 
@@ -122,8 +122,8 @@ class HookedCall(object):
 
     @inlineCallbacks
     def protocol(self, timeout=None):
-        result = yield self.state.expectCallback(None, timeout)
-        returnValue(result.protocol)
+        call = yield self.state.expectCallback(None, timeout)
+        returnValue(call.protocol)
 
     def called(self, decoder=None, timeout=None):
         return called(self, decoder, timeout, instance=None)
