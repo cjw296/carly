@@ -9,6 +9,9 @@ from twisted.internet.defer import Deferred, inlineCallbacks, returnValue
 from .clock import withTimeout
 
 
+ORIGINAL_IS_DECODER = object()
+
+
 @attrs(slots=True)
 class Result(object):
     protocol = attrib(repr=False)
@@ -65,7 +68,7 @@ def called(self, decoder, timeout, instance):
     decoder = decoder or self.decoder
     if decoder is None:
         returnValue(result)
-    if decoder is Result:
+    if decoder is ORIGINAL_IS_DECODER:
         returnValue(result.result)
     returnValue(decoder(*result.args, **result.kw))
 
@@ -81,7 +84,7 @@ class BoundHook(object):
     def __call__(self, *args, **kw):
         result = self.original(self.instance, *args, **kw)
         self.state.handleCall(Result(self.instance, args, kw, result))
-        if self.decoder is not Result:
+        if self.decoder is not ORIGINAL_IS_DECODER:
             return result
 
     def called(self, decoder=None, timeout=None):
@@ -161,7 +164,7 @@ class HookedCall(object):
             cls.registeredClasses.add(class_)
             for name, obj in vars(class_).items():
                 if getattr(obj, '__carly__decoder__', False):
-                    cls.hook(class_, name, decoder=Result)
+                    cls.hook(class_, name, decoder=ORIGINAL_IS_DECODER)
 
     @classmethod
     def cleanup(cls):
