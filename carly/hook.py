@@ -176,6 +176,7 @@ class HookedCall(object):
                 allUnconsumed[key] = unconsumed
             hook.unHook()
         cls.registeredClasses = set()
+        cls.all = {}
         if allUnconsumed:
             raise UnconsumedCalls(allUnconsumed)
 
