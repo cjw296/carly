@@ -18,6 +18,9 @@ matrix:
     - python: "3.7"
 
 install:
+- "pip uninstall -y attrs mock numpy nose pytest py"
+- "pip install 'pip<19'"
+- "pip freeze"
 - "curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python"
 - "source $HOME/.poetry/env"
 - "poetry install"
