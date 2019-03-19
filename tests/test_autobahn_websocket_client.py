@@ -37,11 +37,11 @@ class TestWebSocketClient(TestCase):
     @inlineCallbacks
     def testOneMessage(self):
         payload = yield self.server.onMessage.called()
-        compare(payload, expected='tick 1')
+        compare(payload, expected=b'tick 1')
 
     @inlineCallbacks
     def testTwoMessages(self):
-        compare((yield self.server.onMessage.called()), expected='tick 1')
+        compare((yield self.server.onMessage.called()), expected=b'tick 1')
         # advance time until after the loop will have fired:
         yield advanceTime(seconds=1.1)
-        compare((yield self.server.onMessage.called()), expected='tick 2')
+        compare((yield self.server.onMessage.called()), expected=b'tick 2')

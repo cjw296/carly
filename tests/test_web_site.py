@@ -44,7 +44,7 @@ class TestWebSocketServer(TestCase):
         # make sure that we trap unexpected close messages:
         hook(ServerProtocol, 'sendClose')
         self.server = makeTCPServer(
-            context, ServerProtocol, buildSite('gotit', self.dir.path), installProtocol=False
+            context, ServerProtocol, buildSite(b'gotit', self.dir.path), installProtocol=False
         )
         client = yield makeWebSocketClient(
             context, self.server, factoryClass=ServerTesterFactory, close='close', endpoint='/spam'
@@ -59,7 +59,7 @@ class TestWebSocketServer(TestCase):
     def testSendMessage(self):
         self.client.sendMessage(b'hello')
         message = yield self.client.onMessage.called()
-        compare(message, expected='gotit')
+        compare(message, expected=b'gotit')
 
     @inlineCallbacks
     def testSendBinary(self):
@@ -72,7 +72,7 @@ class TestWebSocketServer(TestCase):
     def testPing(self):
         yield advanceTime(seconds=2.1)
         payload = yield self.client.onMessage.called(timeout=0.3)
-        compare(payload, expected='ping 1')
+        compare(payload, expected=b'ping 1')
 
     @inlineCallbacks
     def testReconnect(self):
@@ -89,7 +89,7 @@ class TestWebSocketServer(TestCase):
 
         client.sendMessage(b'hello')
         payload = yield client.onMessage.called()
-        compare(payload, expected='gotit')
+        compare(payload, expected=b'gotit')
 
         # autobahn just doesn't use client protocol instances that aren't open, so
         # we manually check we're stripped out closed connections:
@@ -98,13 +98,13 @@ class TestWebSocketServer(TestCase):
         yield advanceTime(seconds=2.1)
         
         payload = yield client.onMessage.called()
-        compare(payload, expected='ping 1')
+        compare(payload, expected=b'ping 1')
 
     def request(self, uri):
         agent = Agent(reactor)
-        return agent.request('GET', 'http://{}:{}{}'.format(
+        return agent.request(b'GET', u'http://{}:{}{}'.format(
             self.server.targetHost, self.server.targetPort, uri
-        ))
+        ).encode('ascii'))
 
     @inlineCallbacks
     def testWeb404(self):
@@ -113,8 +113,8 @@ class TestWebSocketServer(TestCase):
 
     @inlineCallbacks
     def testWeb200(self):
-        self.dir.write('test.html', '<html/>')
+        self.dir.write('test.html', b'<html/>')
         response = yield self.request('/test.html')
         compare(response.code, expected=200)
         body = yield readBody(response)
-        compare(body, expected='<html/>')
+        compare(body, expected=b'<html/>')

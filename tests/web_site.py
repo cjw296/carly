@@ -50,7 +50,7 @@ class WebSocketState(object):
         sleep(self.sendDuration)
         self.count += 1
         for client in self.clients:
-            client.sendMessage('ping '+str(self.count))
+            client.sendMessage(b'ping %i' % self.count)
 
     def ping(self):
         deferToThread(self.blockingSendMessage)
@@ -60,5 +60,5 @@ def buildSite(ack, staticPath):
     state = WebSocketState(ack)
     websocket = WebSocketResource(state.factory)
     static = EncodingResourceWrapper(File(staticPath), [GzipEncoderFactory()])
-    static.putChild('spam', websocket)
+    static.putChild(b'spam', websocket)
     return Site(static)

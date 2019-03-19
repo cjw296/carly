@@ -35,24 +35,24 @@ class TestLineReceiverServer(TestCase):
 
     @inlineCallbacks
     def testOneMessage(self):
-        self.client.sendLine('hello')
+        self.client.sendLine(b'hello')
         line = yield self.client.lineReceived.called()
-        compare(line, expected='hello')
+        compare(line, expected=b'hello')
 
     @inlineCallbacks
     def testSendMessageReceiveMessageSendMessageRecieveMessage(self):
-        self.client.sendLine('hello')
+        self.client.sendLine(b'hello')
         line = yield self.client.lineReceived.called()
-        compare(line, expected='hello')
-        self.client.sendLine('goodbye')
+        compare(line, expected=b'hello')
+        self.client.sendLine(b'goodbye')
         line = yield self.client.lineReceived.called()
-        compare(line, expected='goodbye')
+        compare(line, expected=b'goodbye')
 
     @inlineCallbacks
     def testSendTwoMessagesReceveBoth(self):
-        self.client.sendLine('hello')
-        self.client.sendLine('goodbye')
+        self.client.sendLine(b'hello')
+        self.client.sendLine(b'goodbye')
         line = yield self.client.lineReceived.called()
-        compare(line, expected='hello')
+        compare(line, expected=b'hello')
         line = yield self.client.lineReceived.called()
-        compare(line, expected='goodbye')
+        compare(line, expected=b'goodbye')
