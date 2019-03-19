@@ -31,10 +31,10 @@ class TestChatServer(TestCase):
     @inlineCallbacks
     def testLogin(self):
         compare((yield self.client1.lineReceived.called()),
-                expected="What's your name?")
-        self.client1.sendLine('chris')
+                expected=b"What's your name?")
+        self.client1.sendLine(b'chris')
         compare((yield self.client1.lineReceived.called()),
-                expected="Welcome, chris!")
+                expected=b"Welcome, chris!")
         # consume the client 2 greeting:
         yield self.client2.lineReceived.called()
 
@@ -42,14 +42,14 @@ class TestChatServer(TestCase):
     @inlineCallbacks
     def testNameAlreadyTaken(self):
         yield self.client1.lineReceived.called()
-        self.client1.sendLine('dave')
+        self.client1.sendLine(b'dave')
         yield self.client1.lineReceived.called()
 
         compare((yield self.client2.lineReceived.called()),
-                expected="What's your name?")
-        self.client2.sendLine('dave')
+                expected=b"What's your name?")
+        self.client2.sendLine(b'dave')
         compare((yield self.client2.lineReceived.called()),
-                expected="Name taken, please choose another.")
+                expected=b"Name taken, please choose another.")
 
     @inlineCallbacks
     def loginClients(self):
@@ -57,8 +57,8 @@ class TestChatServer(TestCase):
         yield self.client1.lineReceived.called()
         yield self.client2.lineReceived.called()
         # pick name
-        self.client1.sendLine('dave')
-        self.client2.sendLine('chris')
+        self.client1.sendLine(b'dave')
+        self.client2.sendLine(b'chris')
         # login
         yield self.client1.lineReceived.called()
         yield self.client2.lineReceived.called()
@@ -66,9 +66,9 @@ class TestChatServer(TestCase):
     @inlineCallbacks
     def testChat(self):
         yield self.loginClients()
-        self.client1.sendLine('Hi!')
+        self.client1.sendLine(b'Hi!')
         result = yield self.client2.lineReceived.called()
-        compare(result, expected='<dave> Hi!')
+        compare(result, expected=b'<dave> Hi!')
 
     @inlineCallbacks
     def testTick(self):
@@ -76,12 +76,12 @@ class TestChatServer(TestCase):
         self.factory.start()
         yield advanceTime(seconds=1.1)
         compare((yield self.client1.lineReceived.called()),
-                expected="<tick> 0")
+                expected=b"<tick> 0")
         compare((yield self.client2.lineReceived.called()),
-                expected="<tick> 0")
+                expected=b"<tick> 0")
         yield advanceTime(seconds=1.1)
         compare((yield self.client1.lineReceived.called()),
-                expected="<tick> 1")
+                expected=b"<tick> 1")
         compare((yield self.client2.lineReceived.called()),
-                expected="<tick> 1")
+                expected=b"<tick> 1")
         self.factory.stop()

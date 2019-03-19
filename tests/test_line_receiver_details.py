@@ -45,6 +45,6 @@ class TestDetails(TestCase):
 
     @inlineCallbacks
     def testSpecificDecoder(self):
-        self.client.sendLine('hello')
-        line = yield self.client.lineReceived.called(lambda line: line+'!')
-        compare(line, expected='hello!')
+        self.client.sendLine(b'hello')
+        line = yield self.client.lineReceived.called(lambda line: line+b'!')
+        compare(line, expected=b'hello!')

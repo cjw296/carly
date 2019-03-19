@@ -134,6 +134,9 @@ class HookedCall(object):
         Hook a method on a hooked class such that tests can wait on it being called
         on a particular instance.
 
+        :param class_:
+          The class on which to hook the named method.
+
         :param name:
           The name of the method to hook.
 

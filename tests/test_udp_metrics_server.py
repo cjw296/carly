@@ -20,8 +20,8 @@ class TestUDPCollector(TestCase):
 
     @inlineCallbacks
     def testOneClient(self):
-        self.udp.send('{"id": "a"}')
-        self.udp.send('{"id": "a"}')
+        self.udp.send(b'{"id": "a"}')
+        self.udp.send(b'{"id": "a"}')
         yield self.collector.datagramReceived.called()
         compare(self.collector.counts, expected={'a': 1})
         yield self.collector.datagramReceived.called()
@@ -29,8 +29,8 @@ class TestUDPCollector(TestCase):
 
     @inlineCallbacks
     def testMultipleClient(self):
-        self.udp.send('{"id": "a"}')
-        self.udp.send('{"id": "b"}')
+        self.udp.send(b'{"id": "a"}')
+        self.udp.send(b'{"id": "b"}')
         yield self.collector.datagramReceived.called()
         yield self.collector.datagramReceived.called()
         compare(self.collector.counts, expected={'a': 1, 'b': 1})

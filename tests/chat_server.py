@@ -13,7 +13,7 @@ class Chat(LineReceiver):
         self.state = "GETNAME"
 
     def connectionMade(self):
-        self.sendLine("What's your name?")
+        self.sendLine(b"What's your name?")
 
     def connectionLost(self, reason):
         if self.name in self.users:
@@ -27,16 +27,16 @@ class Chat(LineReceiver):
 
     def handle_GETNAME(self, name):
         if name in self.users:
-            self.sendLine("Name taken, please choose another.")
+            self.sendLine(b"Name taken, please choose another.")
             return
-        self.sendLine("Welcome, %s!" % (name,))
+        self.sendLine(b"Welcome, %s!" % (name,))
         self.name = name
         self.users[name] = self
         self.state = "CHAT"
 
     def handle_CHAT(self, message):
-        message = "<%s> %s" % (self.name, message)
-        for name, protocol in self.users.iteritems():
+        message = b"<%s> %s" % (self.name, message)
+        for name, protocol in self.users.items():
             if protocol != self:
                 protocol.sendLine(message)
 
@@ -54,7 +54,7 @@ class ChatFactory(Factory):
 
     def tick(self):
         for protocol in self.users.values():
-            protocol.sendLine('<tick> '+str(self.count))
+            protocol.sendLine(b'<tick> %i' % self.count)
         self.count += 1
 
     def start(self, tickInterval=1) :

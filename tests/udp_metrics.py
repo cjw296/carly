@@ -28,4 +28,4 @@ class SenderProtocol(DatagramProtocol):
         self.loop.start(1)
 
     def ping(self):
-        self.transport.write(json.dumps({'id': 'client'+str(id(self))}))
+        self.transport.write(json.dumps({'id': 'client'+str(id(self))}).encode('ascii'))

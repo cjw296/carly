@@ -32,22 +32,22 @@ class TestWebSocketServer(TestCase):
     def testOneMessage(self):
         self.client.sendMessage(b'hello')
         payload = yield self.client.onMessage.called()
-        compare(payload, expected='hello')
+        compare(payload, expected=b'hello')
 
     @inlineCallbacks
     def testSendMessageReceiveMessageSendMessageRecieveMessage(self):
         self.client.sendMessage(b'hello')
         payload = yield self.client.onMessage.called()
-        compare(payload, expected='hello')
+        compare(payload, expected=b'hello')
         self.client.sendMessage(b'goodbye')
         payload = yield self.client.onMessage.called()
-        compare(payload, expected='goodbye')
+        compare(payload, expected=b'goodbye')
 
     @inlineCallbacks
     def testSendTwoMessagesReceveBoth(self):
         self.client.sendMessage(b'hello')
         self.client.sendMessage(b'goodbye')
         payload = yield self.client.onMessage.called()
-        compare(payload, expected='hello')
+        compare(payload, expected=b'hello')
         payload = yield self.client.onMessage.called()
-        compare(payload, expected='goodbye')
+        compare(payload, expected=b'goodbye')

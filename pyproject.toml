@@ -8,7 +8,7 @@ license = "MIT"
 [tool.poetry.dependencies]
 python = "*"
 Twisted = "^18.9"
-attrs = "^18.2"
+attrs = "*"
 
 [tool.poetry.dev-dependencies]
 testfixtures = "^6.3"
