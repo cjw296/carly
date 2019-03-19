@@ -1,0 +1,56 @@
+version: 2.1
+
+orbs:
+  python: cjw296/python-ci@1.1
+
+jobs:
+  run-tests:
+    parameters:
+      python:
+        type: string
+    docker:
+      - image: circleci/python:<< parameters.python >>
+    steps:
+      - python/poetry-run-tests:
+#          prepare: << parameters.prepare >>
+          command: "poetry run coverage run -m twisted.trial tests"
+
+common: &common
+  jobs:
+
+    - run-tests:
+        name: python27
+        python: "2.7"
+    - run-tests:
+        name: python36
+        python: "3.6"
+    - run-tests:
+        name: python37
+        python: "3.7"
+
+    - python/coverage:
+        name: coverage
+        requires:
+          - python27
+          - python36
+          - python37
+
+    - python/release:
+        name: release
+        requires:
+          - coverage
+        filters:
+          branches:
+            only: master
+
+workflows:
+  push:
+    <<: *common
+  periodic:
+    <<: *common
+    triggers:
+      - schedule:
+          cron: "0 0 * * 6"
+          filters:
+            branches:
+              only: master
