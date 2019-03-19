@@ -1,9 +1,12 @@
 [tool.poetry]
 name = "carly"
-version = "0.9.1"
+version = "0.10.0"
 description = "A tool for putting messages into and collecting responses from Twisted servers using real networking"
 authors = ["Chris Withers <chris@withers.org>"]
 license = "MIT"
+description = "Efficient dispatch-based calling, that might be a switch statement in another language."
+readme = "README.rst"
+repository = "https://github.com/cjw296/carly"
 
 [tool.poetry.dependencies]
 python = "*"
