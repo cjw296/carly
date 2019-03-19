@@ -12,7 +12,6 @@ jobs:
       - image: circleci/python:<< parameters.python >>
     steps:
       - python/poetry-run-tests:
-#          prepare: << parameters.prepare >>
           command: "poetry run coverage run -m twisted.trial tests"
 
 common: &common
