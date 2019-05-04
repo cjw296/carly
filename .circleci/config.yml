@@ -1,7 +1,7 @@
 version: 2.1
 
 orbs:
-  python: cjw296/python-ci@1.1
+  python: cjw296/python-ci@2
 
 jobs:
   run-tests:
@@ -13,6 +13,21 @@ jobs:
     steps:
       - python/poetry-run-tests:
           command: "poetry run coverage run --source carly,tests -m twisted.trial tests"
+
+  check-package:
+    parameters:
+      image:
+        type: string
+    docker:
+      - image: << parameters.image >>
+    steps:
+      - python/check-package:
+          package: "carly"
+          expect_changelog: false
+          test:
+          - run:
+              name: "Import package"
+              command: python -c "import carly"
 
 common: &common
   jobs:
@@ -34,13 +49,31 @@ common: &common
           - python36
           - python37
 
-    - python/release:
-        name: release
+    - python/poetry-build-package:
+        name: package
         requires:
           - coverage
         filters:
           branches:
             only: master
+
+    - check-package:
+        name: check-package-python27
+        image: circleci/python:2.7
+        requires:
+          - package
+
+    - check-package:
+        name: check-package-python37
+        image: circleci/python:3.7
+        requires:
+          - package
+
+    - python/release:
+        name: release
+        requires:
+          - check-package-python27
+          - check-package-python37
 
 workflows:
   push:
