@@ -8,7 +8,7 @@ readme = "README.rst"
 repository = "https://github.com/cjw296/carly"
 
 [tool.poetry.dependencies]
-python = "*"
+python = "~2.7 || ^3.6"
 Twisted = "^18.9"
 attrs = "*"
 
