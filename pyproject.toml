@@ -15,7 +15,7 @@ attrs = "*"
 [tool.poetry.dev-dependencies]
 testfixtures = "^6.3"
 autobahn = "^18.11"
-coverage = "<5"
+coverage = "*"
 
 [tool.carthorse]
 version-from = "poetry"
