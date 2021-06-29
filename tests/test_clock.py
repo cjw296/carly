@@ -1,9 +1,10 @@
-from testfixtures import ShouldRaise
+from testfixtures import ShouldRaise, compare, Replace, not_there
 from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks
 from twisted.trial.unittest import TestCase
 
 from carly import cancelDelayedCalls, advanceTime
+from carly.clock import withTimeout
 
 
 def call1(x): pass
@@ -40,3 +41,38 @@ class TestAdvanceTime(TestCase):
         reactor.callLater(0, fireLater, called)
         yield advanceTime(seconds=6)
         assert called
+
+
+class MockDeferred(object):
+
+    def addTimeout(self, timeout, _):
+        self.timeout = timeout
+        return self
+
+
+class TestWithTimeout(TestCase):
+
+    def testNormal(self):
+        with Replace('os.environ.CARLY_MINIMUM_TIMEOUT', not_there, strict=False):
+            actual = withTimeout(MockDeferred())
+        compare(actual.timeout, expected=0.2)
+
+    def testExplicit(self):
+        with Replace('os.environ.CARLY_MINIMUM_TIMEOUT', not_there, strict=False):
+            actual = withTimeout(MockDeferred(), timeout=42)
+        compare(actual.timeout, expected=42)
+
+    def testFromEnv(self):
+        with Replace('os.environ.CARLY_MINIMUM_TIMEOUT', '42', strict=False):
+            actual = withTimeout(MockDeferred())
+        compare(actual.timeout, expected=42)
+
+    def testExplicitLongerThanEnv(self):
+        with Replace('os.environ.CARLY_MINIMUM_TIMEOUT', '1', strict=False):
+            actual = withTimeout(MockDeferred(), timeout=2)
+        compare(actual.timeout, expected=2)
+
+    def testEnvLongerThanExplicit(self):
+        with Replace('os.environ.CARLY_MINIMUM_TIMEOUT', '2', strict=False):
+            actual = withTimeout(MockDeferred(), timeout=1)
+        compare(actual.timeout, expected=2)

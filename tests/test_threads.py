@@ -1,6 +1,6 @@
 from time import sleep
 
-from testfixtures import compare, ShouldRaise
+from testfixtures import compare, ShouldRaise, Replace
 from twisted.internet.defer import inlineCallbacks, TimeoutError
 from twisted.internet.task import LoopingCall
 from twisted.internet.threads import deferToThread

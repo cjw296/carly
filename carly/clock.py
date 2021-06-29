@@ -1,14 +1,19 @@
 from __future__ import print_function
 
+from os import environ
+
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred, inlineCallbacks
 
-DEFAULT_TIMEOUT = 0.2
+DEFAULT_TIMEOUT = environ.get('CARLY_DEFAULT_TIMEOUT', 0.2)
 
 
 def withTimeout(deferred, timeout=None):
-    if timeout is None:
-        timeout = DEFAULT_TIMEOUT
+    minimum = environ.get('CARLY_MINIMUM_TIMEOUT')
+    minimum = float(minimum) if minimum else None
+    timeout = timeout or minimum or DEFAULT_TIMEOUT
+    if minimum is not None:
+        timeout = max(timeout, minimum)
     return deferred.addTimeout(timeout, reactor)
 
 
