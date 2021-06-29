@@ -1,7 +1,7 @@
 version: 2.1
 
 orbs:
-  python: cjw296/python-ci@dev:current
+  python: cjw296/python-ci@2.1
 
 jobs:
   run-tests:
@@ -33,21 +33,17 @@ common: &common
   jobs:
 
     - run-tests:
-        name: python27
-        python: "2.7"
-    - run-tests:
-        name: python36
-        python: "3.6"
-    - run-tests:
-        name: python37
-        python: "3.7"
+        matrix:
+          parameters:
+            python:
+              - "2.7"
+              - "3.6"
+              - "3.9"
 
     - python/coverage:
         name: coverage
         requires:
-          - python27
-          - python36
-          - python37
+          - run-tests
 
     - python/poetry-build-package:
         name: package
