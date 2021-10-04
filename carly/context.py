@@ -11,6 +11,8 @@ from .threads import waitForThreads
 
 class Context(object):
 
+    _already_done = False
+
     def __init__(self):
         self.cleanups = {
             'connections': [],
@@ -27,6 +29,9 @@ class Context(object):
 
     @inlineCallbacks
     def cleanup(self, timeout=None, threads=False, delayedCalls=None):
+        if self._already_done:
+            return
+        self._already_done = True
         yield self._cleanup(self.cleanups['connections'], timeout)
         yield self._cleanup(self.cleanups['listens'], timeout)
         cleanup()

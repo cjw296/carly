@@ -184,7 +184,6 @@ class HookedCall(object):
             raise UnconsumedCalls(allUnconsumed)
 
 
-
 hook = HookedCall.hook
 cleanup = HookedCall.cleanup
 register = HookedCall.register

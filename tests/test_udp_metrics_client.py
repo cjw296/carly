@@ -5,9 +5,10 @@ from twisted.internet.defer import inlineCallbacks
 from twisted.internet.protocol import DatagramProtocol
 from twisted.trial.unittest import TestCase
 
-from carly import Context, decoder, cancelDelayedCalls, advanceTime
+from carly import Context, decoder, cancelDelayedCalls, advanceTime, Once
 from carly.udp import makeUDP
 from .udp_metrics import SenderProtocol
+
 
 class Receiver(DatagramProtocol):
 
@@ -26,7 +27,7 @@ class TestLineReceiverServer(TestCase):
         makeUDP(context, self.sender)
         self.addCleanup(context.cleanup)
         # stop the client loop:
-        self.addCleanup(cancelDelayedCalls, expected=1)
+        self.addCleanup(Once(cancelDelayedCalls), expected=1)
 
     def testDoNothing(self):
         pass
