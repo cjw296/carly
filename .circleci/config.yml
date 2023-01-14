@@ -70,7 +70,7 @@ workflows:
     <<: *common
     triggers:
       - schedule:
-          cron: "0 2 * * *"
+          cron: "0 6 * * 1"
           filters:
             branches:
               only: master
