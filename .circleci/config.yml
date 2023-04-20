@@ -28,7 +28,6 @@ common: &common
         matrix:
           parameters:
             image:
-              - "cimg/python:3.6"
               - "cimg/python:3.7"
               - "cimg/python:3.8"
               - "cimg/python:3.9"
@@ -52,7 +51,6 @@ common: &common
         matrix:
           parameters:
             image:
-            - "cimg/python:3.6"
             - "cimg/python:3.7"
             - "cimg/python:3.8"
             - "cimg/python:3.9"
