@@ -4,7 +4,7 @@ from pprint import pformat
 
 from attr import attrs, attrib
 from collections import defaultdict
-from twisted.internet.defer import Deferred, inlineCallbacks, returnValue
+from twisted.internet.defer import Deferred, inlineCallbacks, returnValue, DeferredQueue
 
 from .clock import withTimeout
 
@@ -25,40 +25,36 @@ class HookState(object):
 
     def __init__(self, once):
         self.once = once
-        self.instanceDeferreds = defaultdict(Deferred)
-        self.instanceQueues = defaultdict(list)
+        self.firstCalls = {}
+        self.calls = defaultdict(DeferredQueue)
 
     def handleCall(self, call):
         instance = call.protocol
         for target in None, instance:
-            self.instanceQueues[target].append(call)
-            deferred = self.instanceDeferreds[target]
-            if target is None or not self.once:
-                del self.instanceDeferreds[target]
-            deferred.callback(call)
+            self.firstCalls.setdefault(instance, call)
+            self.calls[target].put(call)
 
     @inlineCallbacks
     def expectCallback(self, instance, timeout):
-        queue = self.instanceQueues[instance]
-        if not queue:
-            deferred = self.instanceDeferreds[instance]
-            yield withTimeout(deferred, timeout)
-        if self.once:
-            call = queue[0]
-        else:
-            call = queue.pop(0)
+        deferredCall = self.calls[instance].get()
+        firstCall = self.firstCalls.get(instance)
+        if not self.once or firstCall is None:
+            call = yield withTimeout(deferredCall, timeout)
+        elif self.once:
+            call = self.firstCalls[instance]
         call.consumed = True
         returnValue(call)
 
     def cleanup(self):
         allUnconsumed = {}
-        for instance, queue in self.instanceQueues.items():
+        for instance, queue in self.calls.items():
             if instance is None:
                 continue
-            unconsumed = tuple(r for r in queue if not r.consumed)
+            unconsumed = tuple(r for r in queue.pending if not r.consumed)
             if unconsumed:
                 allUnconsumed[instance] = unconsumed
-            queue[:] = []
+        self.firstCalls.clear()
+        self.calls.clear()
         return allUnconsumed
 
 

@@ -30,6 +30,18 @@ class TestHook(TestCase):
         compare(str(UnconsumedCalls({})), expected='\n{}')
 
     @inlineCallbacks
+    def testMultipleExpectedBeforeCalls(self):
+        hook(Sample, 'method')
+        self.addCleanup(cleanup)
+        obj = Sample()
+        call1 = obj.method.called()
+        call2 = obj.method.called()
+        obj.method('foo')
+        obj.method('foo')
+        yield call2
+        yield call1
+
+    @inlineCallbacks
     def testTimeout(self):
         hook(Sample, 'method')
         self.addCleanup(cleanup)
