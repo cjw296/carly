@@ -1,6 +1,7 @@
 from autobahn.twisted.util import sleep
 from autobahn.twisted.websocket import WebSocketClientProtocol
 from autobahn.twisted.websocket import WebSocketServerProtocol
+from autobahn.websocket.protocol import WebSocketProtocol
 from twisted.internet.defer import inlineCallbacks
 
 
@@ -20,5 +21,6 @@ class MyClientProtocol(WebSocketClientProtocol):
         count = 0
         while True:
             count += 1
-            self.sendMessage((u"tick "+str(count)).encode('utf8'))
+            if self.state == WebSocketProtocol.STATE_OPEN:
+                self.sendMessage((u"tick "+str(count)).encode('utf8'))
             yield sleep(1)

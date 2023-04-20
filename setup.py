@@ -33,7 +33,7 @@ setup(
     ],
     extras_require=dict(
         test=[
-            'autobahn >= 18.11',
+            'autobahn',
             'coverage',
             'testfixtures>6.3',
         ],
