@@ -4,15 +4,6 @@ orbs:
   python: cjw296/python-ci@3.2
 
 jobs:
-  run-tests:
-    parameters:
-      python:
-        type: string
-    docker:
-      - image: cimg/python:<< parameters.python >>
-    steps:
-      - python/poetry-run-tests:
-          command: "poetry run coverage run --source carly,tests -m twisted.trial tests"
 
   check-package:
     parameters:
@@ -32,23 +23,24 @@ jobs:
 common: &common
   jobs:
 
-    - run-tests:
+    - python/pip-run-tests:
+        command: "coverage run --source carly,tests -m twisted.trial tests"
         matrix:
           parameters:
-            python:
-              - "3.6"
-              - "3.7"
-              - "3.8"
-              - "3.9"
-              - "3.10"
-              - "3.11"
+            image:
+              - "cimg/python:3.6"
+              - "cimg/python:3.7"
+              - "cimg/python:3.8"
+              - "cimg/python:3.9"
+              - "cimg/python:3.10"
+              - "cimg/python:3.11"
 
     - python/coverage:
         name: coverage
         requires:
-          - run-tests
+          - python/pip-run-tests
 
-    - python/poetry-build-package:
+    - python/pip-setuptools-build-package:
         name: package
         requires:
           - coverage
@@ -71,6 +63,7 @@ common: &common
 
     - python/release:
         name: release
+        config: .carthorse.yml
         requires:
           - check-package
 
