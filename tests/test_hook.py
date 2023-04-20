@@ -1,4 +1,5 @@
 from testfixtures import ShouldRaise, compare
+from twisted.internet.defer import inlineCallbacks, TimeoutError
 from twisted.trial.unittest import TestCase
 
 from carly import hook, cleanup
@@ -27,3 +28,11 @@ class TestHook(TestCase):
 
     def testUnconsumedstr(self):
         compare(str(UnconsumedCalls({})), expected='\n{}')
+
+    @inlineCallbacks
+    def testTimeout(self):
+        hook(Sample, 'method')
+        self.addCleanup(cleanup)
+        obj = Sample()
+        with ShouldRaise(TimeoutError):
+            yield obj.method.called(timeout=0.01)
