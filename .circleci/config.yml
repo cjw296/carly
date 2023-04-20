@@ -1,7 +1,7 @@
 version: 2.1
 
 orbs:
-  python: cjw296/python-ci@2.1
+  python: cjw296/python-ci@3.2
 
 jobs:
   run-tests:
@@ -9,7 +9,7 @@ jobs:
       python:
         type: string
     docker:
-      - image: circleci/python:<< parameters.python >>
+      - image: cimg/python:<< parameters.python >>
     steps:
       - python/poetry-run-tests:
           command: "poetry run coverage run --source carly,tests -m twisted.trial tests"
@@ -37,7 +37,11 @@ common: &common
           parameters:
             python:
               - "3.6"
+              - "3.7"
+              - "3.8"
               - "3.9"
+              - "3.10"
+              - "3.11"
 
     - python/coverage:
         name: coverage
@@ -53,8 +57,15 @@ common: &common
             only: master
 
     - check-package:
-        name: check-package
-        image: circleci/python:3.7
+        matrix:
+          parameters:
+            image:
+            - "cimg/python:3.6"
+            - "cimg/python:3.7"
+            - "cimg/python:3.8"
+            - "cimg/python:3.9"
+            - "cimg/python:3.10"
+            - "cimg/python:3.11"
         requires:
           - package
 
