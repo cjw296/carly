@@ -28,7 +28,7 @@ setup(
     include_package_data=True,
     python_requires=">=3.6.7",
     install_requires=[
-        'Twisted >= 21.7',
+        'Twisted >= 21.7, <25',
         'attrs',
     ],
     extras_require=dict(
